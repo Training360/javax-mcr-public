@@ -1,0 +1,11 @@
+### List employees
+
+GET http://localhost:8080/api/employees
+Accept: application/json
+
+### Stream
+
+GET http://localhost:8080/api/events/stream
+Accept: text/employee-stream
+
+###

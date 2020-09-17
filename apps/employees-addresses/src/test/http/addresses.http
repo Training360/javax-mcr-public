@@ -1,0 +1,2 @@
+GET http://localhost:8080/api/addresses?name=Jack%20Doe
+Accept: application/json
