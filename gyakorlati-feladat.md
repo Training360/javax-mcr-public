@@ -60,7 +60,7 @@ A `LocationsService` osztályról távolítsd el a `@Service` annotációt,
 és próbáld `@Bean` annotációval ellátott metódusban példányosítani!
 
 Ha végeztél, térj vissza az annotációval történő konfigurációra,
-ugyanis saját beanek esetén ezek használatat javasolt. Később lesz
+ugyanis saját beanek esetén ezek használata javasolt. Később lesz
 olyan bean, melyet Java konfigurációval kell felvenni.
 
 ## Build és futtatás Mavennel
@@ -113,12 +113,12 @@ Csomagold be és futtasd a _Locations_ alkalmazást megfelelően layerelt Docker
 ## Feltöltés GIT repository-ba
 
 Hozz létre egy publikus Git repo-t, és töltsd fel a megoldásod!
-Küld el a mentornak, örülni fog neki!
+Küldd el a mentornak, örülni fog neki!
 
 ## REST webszolgáltatások - GET művelet
 
 Módosítsd az elvárt architektúrának megfelelően a _Locations_ alkalmazást!
-A `LocationsController` legyen `@RestController`, a `getLocations()` metóduson legyen
+A `LocationsController` osztályon legyen `@RestController`, a `getLocations()` metóduson legyen
 `@GetMapping` annotáció! Hozd létre a `LocationDto` osztályt!
 Vezesd be a Lombok használatát!
 A DTO és az entitás közötti konvertálásra használj ModelMappert!
@@ -200,7 +200,7 @@ assert-álj JSON Schema szerint!
 ## Content Negotiation
 
 Implementáld, hogy a REST webszolgáltatások képesek legyenek XML
-formátumú választ is visszaadni. A problémát csak a `List<Location>`
+formátumú választ is visszaadni. Problémát csak a `List<Location>`
 visszatérési érték fog okozni, itt készíts egy burkoló DTO-t!
 Ez alapján feltételezhető, hogy a teszteseteket is át kell írni!
 
@@ -210,8 +210,8 @@ Ez alapján feltételezhető, hogy a teszteseteket is át kell írni!
 
 A `CreateLocationCommand` és `UpdateLocationCommand` esetén a következő
 validációkat építsd be!
-A név nem lehet üres, a latitude -90 és +90
-között kell lennie, a longitude -180 és +180 között kell lennie!
+A név nem lehet üres, a latitude értékének -90 és +90
+között kell lennie, a longitude értékének -180 és +180 között kell lennie!
 Írj rá tesztesetet!
 
 ### Saját validáció
@@ -230,7 +230,7 @@ felvitelre, a service rétegban automatikusan nagybetűsítve lesz!
 
 ## Spring Boot naplózás
 
-Minden létrehozó, módosító és törlő művelet esetén legyen egy napló bejegyzés!
+Minden létrehozó, módosító és törlő művelet esetén legyen egy naplóbejegyzés!
 A naplóban szerepeljen az id is!
 
 ## Spring JdbcTemplate
@@ -278,7 +278,7 @@ az adatbázist, ürítsd ki a `locations` tábla tartalmát!
 
 ### Alkalmazás futtatása Dockerben MariaDB-vel
 
-Indítsd el egy harmadik MariaDB adatbázist (eddig egy kellett a fejlesztéshez,
+Indíts el egy harmadik MariaDB adatbázist (eddig egy kellett a fejlesztéshez,
 egy a tesztesetekhez), és indítsd el az alkalmazást egy Docker
 konténerben, ami ehhez az adatbázishoz kapcsolódik!
 
