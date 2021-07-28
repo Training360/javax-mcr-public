@@ -287,6 +287,11 @@ Indíts el egy harmadik MariaDB adatbázist (eddig egy kellett a fejlesztéshez,
 egy a tesztesetekhez), és indítsd el az alkalmazást egy Docker
 konténerben, ami ehhez az adatbázishoz kapcsolódik!
 
+## Alkalmazás futtatása Docker Compose-zal
+
+Hozz létre egy `docker-compose.yaml` állományt, mely egyszerre futtatja 
+az adatbázist és az alkalmazást tartalmazó Docker konténereket!
+
 ## Séma inicializálás Flyway-jel
 
 Állítsd be, hogy a sémát (táblát) ne a Hibernate hozza létre, hanem a Flyway!
