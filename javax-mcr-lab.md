@@ -221,6 +221,11 @@ Ennek legyen egy `Type` nevű enum paramétere, melynek értékei
 `Type.LAT`, `Type.LON`. Írj hozzá validációt, mely leellenőrzi, hogy a
 koordináták megfelelőek-e. (Csak `double` típusra rakható.) Írj rá tesztesetet!
 
+### Validáció problem-spring-web-starterrel
+
+Alakítsd át úgy az alkalmazásodat, hogy a validáció innentől kezdve a 
+`problem-spring-web-starter` segítségével történjen!
+
 ## Spring Boot konfiguráció
 
 Konfigurációból állítani lehessen, hogy a `LocationService`
@@ -276,19 +281,19 @@ elbukhatnak a tesztesetek! Ez azért van, mert a tesztek között állapot kerü
 átvitelre. Ezért minden integrációs teszt előtt, mely használja
 az adatbázist, ürítsd ki a `locations` tábla tartalmát!
 
-### Alkalmazás futtatása Dockerben MariaDB-vel
+## Alkalmazás futtatása Dockerben MariaDB-vel
 
 Indíts el egy harmadik MariaDB adatbázist (eddig egy kellett a fejlesztéshez,
 egy a tesztesetekhez), és indítsd el az alkalmazást egy Docker
 konténerben, ami ehhez az adatbázishoz kapcsolódik!
 
-### Séma inicializálás Flyway-jel
+## Séma inicializálás Flyway-jel
 
 Állítsd be, hogy a sémát (táblát) ne a Hibernate hozza létre, hanem a Flyway!
 
 Amennyiben nem Flywayt használnál, kipróbálhatod a Liquibase-t is.
 
-### MongoDB
+## MongoDB
 
 Índíts el egy MongoDB adatbázist Dockerben!
 Hozz létre egy új projektet `locations-mongodb` néven a jelenlegi projekt lemásolásával,
@@ -297,7 +302,7 @@ dolgozzon!
 
 A `@DataJpaTest` annotációt tartalmazó teszt osztályt törölheted!
 
-### OAUTH 2.0 KeyCloak szerverrel
+## OAUTH 2.0 KeyCloak szerverrel
 
 Indítsd el a KeyCloak szervert! Konfiguráld be, hogy legyenek
 felhasználók, szerepkörökkel!
@@ -307,7 +312,7 @@ Hozz létre egy alkalmazást `locations-security` néven a
 Security-t, hogy csak a JWT token megadásával lehessen
 adatokat módosítani.
 
-### RestTemplate
+## RestTemplate
 
 Indítsd el Dockerben az _EventStore_ alkalmazást!
 Amennyiben létrejön, módosításra vagy törlésre kerül egy
@@ -317,12 +322,12 @@ Az URL-t konfigurációs paraméterből olvasd be!
 
 Az `EventStoreGateway` osztályba dolgozz!
 
-### WireMock
+## WireMock
 
 Írj integrációs tesztet az
 `EventStoreGateway` osztályra WireMock segítségével!
 
-### JMS üzenet küldése
+## JMS üzenet küldése
 
 Indítsd el az ArtemisMQ-t Docker konténerben! 
 Állítsd le az _EventStore_ alkalmazást, majd indítsd újra, hogy csatlakozzon
@@ -334,7 +339,7 @@ Módosítsd az alkalmazásod, hogy ne REST-en keresztül
 Ha a RabbitMQ érdekel, akkor kipróbálhatod azt is a következő
 poszt alapján: [https://www.jtechlog.hu/2020/09/11/rabbitmq.html](https://www.jtechlog.hu/2020/09/11/rabbitmq.html).
 
-### Actuator
+## Actuator
 
 * Kapcsold be az összes Actuatort!
 * Próbáld ki az `/info` Actuatort!
@@ -349,34 +354,30 @@ poszt alapján: [https://www.jtechlog.hu/2020/09/11/rabbitmq.html](https://www.j
 * Az `/info` Actuatorba vedd fel az alkalmazás nevét, majd próbáld ki!
 * Próbáld ki a `/env` Actuatort!
 
-### GIT információk megjelenítése
+## GIT információk megjelenítése
 
 A `git-commit-id-plugin` plugin használatával jelenítsd meg az `/info` Actuatorban a Git commit id-ját!
 Ehhez az alkalmazás forráskódját Git verziókezelő rendszerbe kell commitolni.
 
-### Naplózás
+## Naplózás
 
 Kérd le a `locations` csomag naplózási szintjét, majd módosítsd Actuatoron keresztül futás közben!
 
-### Metrics
+## Metrics
 
 Hozz létre egy metrikát, hogy hány kedvenc helyet hoztak létre!
 
-### Graphite
-
-Integráld az alkalmazást a Graphite eszközzel!
-
-### Prometheus
+## Prometheus
 
 Integráld az alkalmazást a Prometheus eszközzel!
 
-### Audit Events
+## Audit Events
 
 Vegyél fel egy `InMemoryAuditEventRepository` beant!
 Minden módosító művelet esetén dobj egy új eventet!
 Ellenőrizd az Actuatorban a létrejött eventeket!
 
-### Continuous Delivery Jenkins Pipeline-nal
+## Continuous Delivery Jenkins Pipeline-nal
 
 * Indíts el lokálisan Docker konténerben egy Jenkinst!
   * Admin jelszó a konzolon, vagy a `/var/jenkins_home/secrets/initialAdminPassword` fájlban.
