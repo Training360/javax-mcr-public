@@ -4096,7 +4096,7 @@ info.appname = employees
 
 ## Property
 
-* `/env` végpont - property source-ok alapján felsorolva
+* `/env` végpont - `Environment` absztrakció, aktív profile-ok, property source-ok
 * `/env/info.appname` - értéke, látszik, hogy melyik property source-ból jött
 * Spring Cloud Config esetén `POST`-ra módosítani is lehet <br /> (Spring Cloud Config Server használja)
 
