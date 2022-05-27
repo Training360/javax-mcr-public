@@ -31,19 +31,6 @@ class LocationsControllerWebMvcIT {
     @Autowired
     ObjectMapper objectMapper;
 
-//    @Test
-//    void testGetLocations() throws Exception {
-//        when(service.getLocations(any())).thenReturn(List.of(new LocationDto(1L, "Róma", 41.90383, 12.50557),
-//                new LocationDto(2L, "Athén", 37.97954, 23.72638)));
-//
-//        mockMvc.perform(get("/api/locations"))
-//                //            .andDo(print());
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$[0].name", equalTo("Róma")))
-//                .andExpect(jsonPath("$[1].name", equalTo("Athén")));
-//    }
-
-    // Content Negotiation
     @Test
     void testGetLocations() throws Exception {
         when(service.getLocations(any())).thenReturn(List.of(new LocationDto(1L, "Róma", 41.90383, 12.50557),
@@ -117,7 +104,6 @@ class LocationsControllerWebMvcIT {
                 .andExpect(jsonPath("$.name", equalTo("Athén")));
     }
 
-    // Validáció
     @Test
     void testCreateLocationWithNotValidNameLatitudeAndLongitude() throws Exception {
         mockMvc.perform(post("/api/locations").contentType(APPLICATION_JSON)
@@ -127,7 +113,7 @@ class LocationsControllerWebMvcIT {
                         "  \"lon\": 500\n" +
                         "}"))
                 .andExpect(status().isBadRequest());
-//                .andExpect(jsonPath("$.title", equalTo("Validation error")));
+
         verify(service, never()).createLocation(any());
     }
 
@@ -140,7 +126,7 @@ class LocationsControllerWebMvcIT {
                         "  \"lon\": 500\n" +
                         "}"))
                 .andExpect(status().isBadRequest());
-//                .andExpect(jsonPath("$.title", equalTo("Validation error")));
+
         verify(service, never()).updateLocation(anyLong(), any());
     }
 }

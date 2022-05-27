@@ -2,9 +2,10 @@ package locations;
 
 //import org.modelmapper.ModelMapper;
 //import org.modelmapper.TypeToken;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class LocationsService {
 
     // REST webszolgáltatások - GET művelet
@@ -34,6 +36,10 @@ public class LocationsService {
             new Location(idGenerator.incrementAndGet(), "Róma", 41.90383, 12.50557),
             new Location(idGenerator.incrementAndGet(), "Athén", 37.97954, 23.72638)
     ));
+
+    // Spring Boot konfiguráció
+//    @Value("${locations.name-auto-uppercase}")
+//    private boolean nameAutoUpperCase;
 
     // MapStruct
     private LocationMapper locationMapper;
@@ -85,7 +91,17 @@ public class LocationsService {
     public LocationDto createLocation(CreateLocationCommand command) {
         Location location = new Location(idGenerator.incrementAndGet(),
                 command.getName(), command.getLatitude(), command.getLongitude());
+
+        // Spring Boot konfiguráció
+//        if (nameAutoUpperCase == true) {
+//            location.setName(location.getName().toUpperCase());
+//        }
+
         locations.add(location);
+
+        // Spring Boot naplózás
+        log.info("Location with id = " + location.getId() + " has been created.");
+
 //        return modelMapper.map(location, LocationDto.class);
         return locationMapper.toDto(location);
     }
@@ -100,6 +116,10 @@ public class LocationsService {
         location.setName(command.getName());
         location.setLatitude(command.getLatitude());
         location.setLongitude(command.getLongitude());
+
+        // Spring Boot naplózás
+        log.info("Location with id = " + location.getId() + " has been updated.");
+
 //        return modelMapper.map(location, LocationDto.class);
         return locationMapper.toDto(location);
     }
@@ -112,5 +132,13 @@ public class LocationsService {
 //                .orElseThrow(() -> new LocationNotFoundException("Location not found: " + id));
                 .orElseThrow(() -> new LocationNotFoundException(id));
         locations.remove(location);
+
+        // Spring Boot naplózás
+        log.info("Location with id = " + location.getId() + " has been deleted.");
+    }
+
+    public void deleteAllLocations() {
+        idGenerator = new AtomicLong();
+        locations.clear();
     }
 }

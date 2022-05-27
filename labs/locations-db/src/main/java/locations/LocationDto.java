@@ -9,7 +9,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-// Content Negotiation
 @XmlRootElement
 public class LocationDto {
 

@@ -1,5 +1,6 @@
 package locations;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,49 +27,6 @@ class LocationsControllerTest {
     @InjectMocks
     LocationsController locationsController;
 
-    // Unit és integrációs tesztek
-//    @Test
-//    void testGetLocations() {
-//        List<Location> locations = Arrays.asList(
-//                new Location("Sydney", -33.88223, 151.33140)
-//        );
-//        when(locationsService.getLocations()).thenReturn(locations);
-//        String expected = locationsController.getLocations();
-//
-//        assertThat(expected).contains("Sydney");
-//    }
-
-    // REST webszolgáltatások - GET művelet
-//    @Test
-//    void testGetLocations() {
-//        List<LocationDto> locations = Arrays.asList(
-//                new LocationDto("Sydney", -33.88223, 151.33140)
-//        );
-//        when(locationsService.getLocations()).thenReturn(locations);
-//        List<LocationDto> expected = locationsController.getLocations();
-//
-//        assertThat(expected)
-//                .hasSize(1)
-//                .extracting(LocationDto::getName)
-//                .containsOnly("Sydney");
-//    }
-
-    // GET műveletek paraméterezése
-//    @Test
-//    void testGetLocations() {
-//        List<LocationDto> locations = Arrays.asList(
-//                new LocationDto("Sydney", -33.88223, 151.33140)
-//        );
-//        when(locationsService.getLocations(any())).thenReturn(locations);
-//        List<LocationDto> expected = locationsController.getLocations(Optional.empty());
-//
-//        assertThat(expected)
-//                .hasSize(1)
-//                .extracting(LocationDto::getName)
-//                .containsOnly("Sydney");
-//    }
-
-    // Content Negotiation
     @Test
     void testGetLocations() {
         List<LocationDto> locations = Arrays.asList(

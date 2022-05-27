@@ -4,62 +4,33 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
+// Integrációs tesztelés - MariaDB
+@Sql(statements = "delete from locations")
 class LocationsControllerIT {
 
     @Autowired
     LocationsController locationsController;
 
-    @Autowired
-    LocationsService locationsService;
-
-    // Unit és integrációs tesztek
-//    @Test
-//    void testGetLocations() {
-//        String expected = locationsController.getLocations();
-//
-//        assertThat(expected).containsSubsequence("Budapest", "Róma", "Athén");
-//    }
-
-    // REST webszolgáltatások - GET művelet
-//    @Test
-//    void testGetLocations() {
-//        List<LocationDto> expected = locationsController.getLocations();
-//
-//        assertThat(expected)
-//                .hasSize(3)
-//                .extracting(LocationDto::getName)
-//                .containsExactly("Budapest", "Róma", "Athén");
-//    }
-
-    // GET műveletek paraméterezése
-//    @Test
-//    void testGetLocations() {
-//        List<LocationDto> expected = locationsController.getLocations(Optional.of("B"));
-//
-//        assertThat(expected)
-//                .hasSize(1)
-//                .extracting(LocationDto::getName)
-//                .containsExactly("Budapest");
-//    }
+    LocationDto location;
 
     @BeforeEach
     void init() {
-        locationsService.deleteAllLocations();
-
         locationsController.createLocation(new CreateLocationCommand("Budapest", 47.497912, 19.040235));
-        locationsController.createLocation(new CreateLocationCommand("Róma", 41.90383, 12.50557));
+        location = locationsController.createLocation(new CreateLocationCommand("Róma", 41.90383, 12.50557));
         locationsController.createLocation(new CreateLocationCommand("Athén", 37.97954, 23.72638));
     }
 
-    // Content Negotiation
+    // Integrációs tesztelés - MariaDB
     @Test
     void testGetLocations() {
         LocationsDto expected = locationsController.getLocations(Optional.empty());
@@ -82,16 +53,16 @@ class LocationsControllerIT {
 
     @Test
     void testFindLocationById() {
-        LocationDto expected = locationsController.findLocationById(2);
+        LocationDto expected = locationsController.findLocationById(location.getId());
 
         assertEquals("Róma", expected.getName());
     }
 
     @Test
     void testUpdateLocation() {
-        locationsController.updateLocation(2, new UpdateLocationCommand("Róma", 2.2, 3.3));
+        locationsController.updateLocation(location.getId(), new UpdateLocationCommand("Róma", 2.2, 3.3));
 
-        LocationDto expected = locationsController.findLocationById(2);
+        LocationDto expected = locationsController.findLocationById(location.getId());
 
         assertEquals("Róma", expected.getName());
         assertEquals(2.2, expected.getLatitude());
@@ -100,7 +71,7 @@ class LocationsControllerIT {
 
     @Test
     void testDeleteLocation() {
-        locationsController.deleteLocation(2);
+        locationsController.deleteLocation(location.getId());
 
         LocationsDto expected = locationsController.getLocations(Optional.empty());
 
