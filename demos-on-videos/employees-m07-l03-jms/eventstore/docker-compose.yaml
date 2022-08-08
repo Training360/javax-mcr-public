@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  eventstore-mq:
+    image: training360/eventstore-mq
+    restart: always
+    ports:
+      - "8161:8161"
+      - "61616:61616"
+  eventstore:
+    image: training360/eventstore
+    restart: always
+    depends_on:
+      - eventstore-mq
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_ARTEMIS_HOST: 'eventstore-mq'
+    entrypoint: ["./wait-for-it.sh", "-t", "120", "eventstore-mq:61616", "--", "java", "org.springframework.boot.loader.JarLauncher"]

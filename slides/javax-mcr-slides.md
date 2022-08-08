@@ -59,7 +59,7 @@ class: inverse, center, middle
 
 ## Spring Framework <br /> tulajdonságai - 1.
 
-* Komponensek, melyeket konténerként tartalmaz <br /> (konténer: Application Context)
+* Komponensek, melyeket konténerként tartalmaz <br /> (konténer: application context)
 * Konténer vezérli a komponensek életciklusát <br /> (pl. példányosítás)
 * Konténer felügyeli a komponensek közötti kapcsolatot <br /> (Dependency Injection, Inversion of Control)
 * Komponensek és kapcsolataik leírása több módon: <br /> XML, annotáció, Java kód
@@ -281,7 +281,7 @@ public class EmployeesService {
 @Controller
 public class EmployeesController {
 
-    public final EmployeesService employeesService;
+    private final EmployeesService employeesService;
 
     public EmployeesController(EmployeesService employeesService) {
         this.employeesService = employeesService;
@@ -674,9 +674,18 @@ class: inverse, center, middle
 * Operációs rendszer szintű virtualizáció
 * Jól elkülönített környezetek, saját fájlrendszerrel és telepített szoftverekkel
 * Jól meghatározott módon kommunikálhatnak egymással
-* Kernelt nem tartalmaz, hanem a host Linux kernel izoláltan futtatja
-   * Linux kernel cgroups és namespaces képességeire alapozva
 * Kevésbé erőforrásigényes, mint a virtualizáció
+
+---
+
+## Megvalósítása
+
+* Kliens - szerver architektúra, REST API
+* Kernelt nem tartalmaz, hanem a host Linux kernel izoláltan futtatja
+ * namespaces: operációs rendszer szintű elemek izolálására: folyamatok, InterProcess Communication (IPC), 
+     fájlrendszer, hálózat, UTS (UNIX Timesharing System - host- és domainnév), felhasználók
+ * cGroups (Control Groups): erőforrás limitáció
+* Union FS (írásvédett, vagy írható/olvasható rétegek)
 
 ---
 
@@ -689,8 +698,9 @@ class: inverse, center, middle
 ## Docker Windowson
 
 * Docker Toolbox: VirtualBoxon futó Linuxon
-* Hyper-V megoldás: LinuxKit, Linux Containers for Windows (LCOW), MobyVM
-* WSL2 - Windows Subsystem for Linux - 2-es verziótól Microsoft által Windowson fordított és futtatott Linux kernel
+* Docker Desktop
+  * Hyper-V megoldás: LinuxKit, Linux Containers for Windows (LCOW), MobyVM
+  * WSL2 - Windows Subsystem for Linux - 2-es verziótól Microsoft által Windowson fordított és futtatott Linux kernel
 
 ---
 
@@ -719,6 +729,15 @@ class: inverse, center, middle
 
 ---
 
+## Docker folyamat
+
+* Alkalmazás
+* Dockerfile
+* Image
+* Konténer
+
+---
+
 ## Docker konténerek
 
 ```shell
@@ -737,7 +756,7 @@ docker stop nginx
 docker rm nginx
 ```
 
-Használható az azonosító első három karaktere is
+Használható az azonosító első n karaktere is, amely egyedivé teszi
 
 ---
 
@@ -1215,6 +1234,28 @@ Elérhető a `/api/employees?prefix=Jack` címen
 
 ---
 
+## Több URL paraméter kezelése
+
+* Létrehozni egy objektumot
+* Nem szükséges annotáció
+
+```java
+public List<EmployeeDto> listEmployees(QueryParameters parameters) {
+   return employeesService.listEmployees(prefix);
+}
+```
+
+```java
+@Data
+public class QueryParameters {
+    private String prefix;
+
+    private String postfix;
+}
+```
+
+---
+
 ## URL részletek kezelése
 
 * Osztályon lévő `@RequestMapping` és `@GetMapping` összeadódik
@@ -1329,6 +1370,34 @@ public EmployeeDto createEmployee(
     @RequestBody CreateEmployeeCommand command) {
   return employeesService.createEmployee(command);
 }
+```
+
+---
+
+## 201 - Location header
+
+```java
+@PostMapping
+public ResponseEntity<EmployeeDto> createEmployee(@RequestBody CreateEmployeeCommand command, 
+        UriComponentsBuilder uri) {
+    EmployeeDto employeeDto = employeeService.createEmployee(command);
+    return ResponseEntity
+        .created(uri.path("/api/employees/{id}").buildAndExpand(employeeDto.getId()).toUri())
+        .body(employeeDto);
+}
+```
+
+Unit teszt:
+
+```java
+UriComponentsBuilder builder = mock(UriComponentsBuilder.class);
+UriComponents components = mock(UriComponents.class);
+when(builder.path(any())).thenReturn(builder);
+when(builder.buildAndExpand(anyLong())).thenReturn(components);
+
+EmployeeDto employeeDto = employeesController
+    .createEmployee(new CreateEmployeeCommand("John Doe"), builder)
+    .getBody();
 ```
 
 ---
@@ -1456,6 +1525,66 @@ public ObjectMapper objectMapper() {
 
 ---
 
+## problem-spring-web-starter
+
+* Integrált Spring MVC kivételkezelés és Problem 3rd-party library
+
+```xml
+<dependency>
+   <groupId>org.zalando</groupId>
+   <artifactId>problem-spring-web-starter</artifactId>
+   <version>0.26.2</version>
+</dependency>
+```
+
+---
+
+## Hiba személyre szabása
+
+* Beépítetten több kivételt kezel
+* Vagy a `AbstractThrowableProblem` kivételtől származik a saját kivétel osztályunk
+* Saját `AdviceTrait` implementálása, mely saját `Problem` példányt hoz létre saját kivétel osztályunk esetén
+
+```java
+public class EmployeeNotFoundException extends AbstractThrowableProblem {
+
+    private static final URI TYPE
+            = URI.create("employees/employee-not-found");
+
+    public EmployeeNotFoundException(Long id) {
+        super(
+                TYPE,
+                "Not found",
+                Status.NOT_FOUND,
+                String.format("Employee with id '%d' not found", id));
+    }
+}
+```
+
+---
+
+## Problem könyvtártól független kivétel
+
+```java
+@ControllerAdvice
+public class EmployeesExceptionHandler implements ProblemHandling {
+
+    @ExceptionHandler
+    ResponseEntity<Problem> handleException(EmployeeNotFoundException exception, NativeWebRequest request) {
+        Problem problem =
+            Problem.builder()
+                .withType(URI.create("employees/employee-not-found"))
+                .withTitle("Not found")
+                .withStatus(Status.NOT_FOUND)
+                .withDetail(exception.getMessage())
+                .build();
+        return this.create(exception, problem, request);
+    }
+}
+```
+
+---
+
 class: inverse, center, middle
 
 # Integrációs tesztelés
@@ -1553,6 +1682,84 @@ void testListEmployees() {
           .extracting(EmployeeDto::getName)
           .containsExactly("John Doe", "Jane Doe");
 }
+```
+
+---
+
+class: inverse, center, middle
+
+# Tesztelés WebClient használatával
+
+---
+
+## WebClient
+
+* Spring Framework 5.0 vezette be alapvetően WebFlux integrációs tesztekhez, de működik Spring MVC-vel is
+* Fluent API assertionök írásához
+* Szükséges a `org.springframework.boot:spring-boot-starter-webflux` függőség
+* Spring MVC esetén nem használható, csak valós konténerrel
+
+---
+
+## Egyszerű kérések és assert
+
+* Metódus, uri, kérés törzse és státuszkód
+
+```java
+webClient.post().uri("/api/employees")
+        .bodyValue(new CreateEmployeeCommand(("John Doe")))
+        .exchange()
+        .expectStatus().isCreated()
+```
+
+A `post()` mellett `get()`, `put()` és `delete()` metódusok
+
+---
+
+## URI
+
+Path variable (URI variable)
+
+```java
+webClient.get().uri("/api/employees/{id}", 1)
+```
+
+Request parameter (query parameter)
+
+```java
+webClient.get().uri(builder -> builder.path("/api/employees").queryParam("prefix", "j").build())
+```
+
+`Function`
+
+---
+
+## Válasz értelmezése JSON-ként
+
+```java
+.expectBody(String.class).value(s -> System.out.println(s))
+```
+
+Paraméterként `Consumer`
+
+JSON Path
+
+```java
+.expectBody().jsonPath("name").isEqualTo("John Doe");
+```
+
+---
+
+## Egyszerű objektum és lista
+
+```java
+.expectBody(EmployeeDto.class).value(e -> assertEquals("John Doe", e.getName()));
+```
+
+Lista
+
+```java
+.expectBodyList(EmployeeDto.class).hasSize(2).contains(new EmployeeDto(1L, "John Doe"));
 ```
 
 ---
@@ -2031,6 +2238,24 @@ public class Violation {
       "message": "Name can not be null"
     }
   ]
+}
+```
+
+---
+
+## problem-spring-web-starter
+
+```json
+{
+  "type": "https://zalando.github.io/problem/constraint-violation",
+  "status": 400,
+  "violations": [
+    {
+      "field": "name",
+      "message": "Name can not be null"
+    }
+  ],
+  "title": "Constraint Violation"
 }
 ```
 
@@ -3306,7 +3531,6 @@ docker run -e KEYCLOAK_USER=root -e KEYCLOAK_PASSWORD=root -p 8081:8080
 * Létre kell hozni a szerepköröket (`employees_app_user`)
 * Létre kell hozni egy felhasználót (a _Email Verified_ legyen _On_ értéken, hogy be lehessen vele jelentkezni), beállítani a jelszavát (a _Temporary_ értéke legyen _Off_, hogy ne kelljen jelszót módosítani), <br /> valamint hozzáadni a szerepkört (`johndoe`)
 
-
 ---
 
 ## Keycloak tesztelés
@@ -3319,7 +3543,17 @@ http://localhost:8081/auth/realms/EmployeesRealm/.well-known/openid-configuratio
 ```
 ]
 
-* Token lekérése (https://jws.io címen ellenőrizhető)
+* A következő címen lekérhető a tanúsítvány
+
+.small-code-14[
+```
+http://localhost:8081/auth/realms/EmployeesRealm/protocol/openid-connect/certs
+```
+]
+
+---
+
+## Token lekérése
 
 .small-code-14[
 ```shell
@@ -3328,13 +3562,15 @@ curl -s --data "grant_type=password&client_id=employees-app&username=johndoe&pas
 ```
 ]
 
-* A következő címen lekérhető a tanúsítvány
-
 .small-code-14[
+```http
+POST http://localhost:8081/auth/realms/Employees/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=employees-app&username=johndoe&password=johndoe
 ```
-http://localhost:8081/auth/realms/EmployeesRealm/protocol/openid-connect/certs
-```
-]
+
+* A https://jws.io címen ellenőrizhető
 
 ---
 
@@ -3389,12 +3625,13 @@ Be kell írni egy létező scope-ot (pl. `profile`), mert üreset nem tud értel
 keycloak.auth-server-url=http://localhost:8081/auth
 keycloak.realm=Employees
 keycloak.resource=employees-app
-keycloak.public-client=true
+keycloak.bearer-only=true
 
 keycloak.security-constraints[0].authRoles[0]=employees_app_user
 keycloak.security-constraints[0].securityCollections[0].patterns[0]=/*
 
 keycloak.principal-attribute=preferred_username
+
 ```
 ]
 
@@ -3402,7 +3639,7 @@ keycloak.principal-attribute=preferred_username
 
 ## Kérés
 
-```plaintext
+```http
 GET http://localhost:8080/api/employees
 Accept: application/json
 Authorization: bearer eyJ...
@@ -3488,6 +3725,42 @@ employees.addresses.url = http://localhost:8081/api/addresses?name={name}
 
 class: inverse, center, middle
 
+# WebClient
+
+---
+
+## Integráció WebClienttel függőség
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-webflux</artifactId>
+</dependency>
+```
+
+---
+
+## Integráció WebClienttel
+
+```java
+@Service
+public class AddressesGateway {
+
+    public AddressDto findAddressByName(String name) {
+        return WebClient.create("http://localhost:8081")
+                .get()
+                .uri(builder -> builder.path("/api/addresses").queryParam("name", name).build())
+                .retrieve()
+                .bodyToMono(AddressDto.class)
+                .block();
+    }
+}
+```
+
+---
+
+class: inverse, center, middle
+
 # RestTemplate integrációs tesztelése
 
 ---
@@ -3498,7 +3771,7 @@ class: inverse, center, middle
 ```java
 @RestClientTest(value = AddressesGateway.class, 
   properties = "employees.addresses.url = http://localhost:8080/api/addresses?name={name}")
-public class EventStoreGatewayRestTemplateTestIT {
+public class AddressesGatewayRestTemplateIT {
 
     @Autowired
     AddressesGateway addressesGateway;
@@ -3527,7 +3800,7 @@ public class EventStoreGatewayRestTemplateTestIT {
 ## ObjectMapper
 
 ```java
-public class EventStoreGatewayRestTemplateTestIT {
+public class AddressesGatewayRestTemplateIT {
 
     // ...
 
@@ -3562,6 +3835,7 @@ class: inverse, center, middle
 * Képes felvenni és visszajátszani kommunikációt
 * REST és Java API
 * Konfigurálható akár JSON állományokkal is
+* Spring Boot integráció: [Spring Cloud Contract WireMock](https://docs.spring.io/spring-cloud-contract/docs/current/reference/html/project-features.html#features-wiremock)
 
 ---
 
@@ -3569,84 +3843,44 @@ class: inverse, center, middle
 
 ```xml
 <dependency>
-	<groupId>com.github.tomakehurst</groupId>
-	<artifactId>wiremock-jre8</artifactId>
-	<version>${wiremock.version}</version>
-	<scope>test</scope>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-contract-stub-runner</artifactId>
+    <version>3.1.3</version>
+    <scope>test</scope>
 </dependency>
 ```
 
 ---
 
-## Importok
-
-```java
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-```
-
----
-
-## Inicializáció
+## Teszteset
 
 .small-code-14[
 ```java
-public class AddressesGatewayIT {
+@SpringBootTest
+@AutoConfigureWireMock(port = 8081)
+class AddressesGatewayWireMockIT {
 
-    static String host = "127.0.0.1";
+    @Autowired
+    AddressesGateway addressesGateway;
 
-    static int port;
+    @Test
+    void testFindAddressByName() {
+      String resource = "/api/addresses";
 
-    static WireMockServer wireMockServer;
+      stubFor(get(urlPathEqualTo("/api/addresses"))
+        .willReturn(aResponse()
+        .withHeader("Content-Type", "application/json")
+        .withBody("{\"city\": \"Budapest\", \"address\": \"Andrássy u. 2.\"}")));
 
-    @BeforeAll
-    static void startServer() {
-        port = SocketUtils.findAvailableTcpPort();
-        wireMockServer = new WireMockServer(wireMockConfig().port(port));
-        WireMock.configureFor(host, port);
-        wireMockServer.start();
+      Address address = gateway.findAddressByName("John Doe");
+
+      verify(getRequestedFor(urlPathEqualTo(resource))
+        .withQueryParam("name", equalTo("John Doe")));
+        
+      assertThat(address.getCity()).isEqualTo("Budapest");
+      assertThat(address.getAddress()).isEqualTo("Andrássy u. 2.");
     }
 
-    @AfterAll
-    static void stopServer() {
-        wireMockServer.stop();
-    }
-
-    @BeforeEach
-    void resetServer() {
-        WireMock.reset();
-    }
-}
-```
-]
-
----
-
-## Teszt metódus
-
-.small-code-14[
-```java
-@Test
-void testFindAddressByName() {
-  String resource = "/api/addresses";
-
-  stubFor(get(urlPathEqualTo("/api/addresses"))
-    .willReturn(aResponse()
-    .withHeader("Content-Type", "application/json")
-    .withBody("{\"city\": \"Budapest\", \"address\": \"Andrássy u. 2.\"}")));
-
-  String url = String.format("http://%s:%d/api/addresses?name={name}", host, port);
-  AddressesGateway gateway = new AddressesGateway(new RestTemplateBuilder(), url);
-  Address address = gateway.findAddressByName("John Doe");
-
-  verify(getRequestedFor(urlPathEqualTo(resource))
-    .withQueryParam("name", equalTo("John Doe")));
-    
-  assertThat(address.getCity()).isEqualTo("Budapest");
-  assertThat(address.getAddress()).isEqualTo("Andrássy u. 2.");
 }
 ```
 ]
@@ -4060,7 +4294,7 @@ management.endpoint.health.show-details = always
 
 ## Trace
 
-* Ha van `HttpTraceRepository` a classpath-on
+* Ha van `HttpTraceRepository` az application contextben
 * Fejlesztői környezetben: `InMemoryHttpTraceRepository`
 * Éles környezetben: Zipkin vagy Spring Cloud Sleuth
 * Megjelenik a `/httptrace` endpoint
@@ -4096,7 +4330,7 @@ info.appname = employees
 
 ## Property
 
-* `/env` végpont - `Environment` absztrakció, aktív profile-ok, property source-ok
+* `/env` végpont - property source-ok alapján felsorolva
 * `/env/info.appname` - értéke, látszik, hogy melyik property source-ból jött
 * Spring Cloud Config esetén `POST`-ra módosítani is lehet <br /> (Spring Cloud Config Server használja)
 
@@ -4290,11 +4524,10 @@ class: inverse, center, middle
 
 ```shell
 docker run
-  -d
-  --name graphite
-  --restart=always
+  -d  
   -p 80:80 -p 2003-2004:2003-2004 -p 2023-2024:2023-2024
   -p 8125:8125/udp -p 8126:8126
+  --name graphite
   graphiteapp/graphite-statsd
 ```
 
@@ -4324,6 +4557,20 @@ class: inverse, center, middle
 
 ---
 
+## Spring Boot alkalmazás <br /> konfigurálása
+
+* `io.micrometer:micrometer-registry-prometheus` függőség
+* `/actuator/prometheus` endpoint
+
+```xml
+<dependency>
+  <groupId>io.micrometer</groupId>
+  <artifactId>micrometer-registry-prometheus</artifactId>
+  <version>${micrometer-registry-prometheus.version}</version>
+</dependency>
+```
+---
+
 ## Prometheus architektúra
 
 * Prometheus kérdez le a megadott rendszerességgel
@@ -4331,7 +4578,7 @@ class: inverse, center, middle
 
 ```yaml
 scrape_configs:
-  - job_name: 'spring'
+  - job_name: employees
     metrics_path: '/actuator/prometheus'
     scrape_interval: 20s
     static_configs:
@@ -4345,23 +4592,8 @@ scrape_configs:
 Tegyük fel, hogy a `prometheus.yml` a `D:\data\prometheus` könyvtárban van
 
 ```shell
-docker run -p 9090:9090 -v D:\data\prometheus:/etc/prometheus
+docker run -d -p 9090:9090 -v D:\data\prometheus:/etc/prometheus
   --name prom prom/prometheus
-```
-
----
-
-## Spring Boot alkalmazás <br /> konfigurálása
-
-* `io.micrometer:micrometer-registry-prometheus` függőség
-* `/actuator/prometheus` endpoint
-
-```xml
-<dependency>
-  <groupId>io.micrometer</groupId>
-  <artifactId>micrometer-registry-prometheus</artifactId>
-  <version>${micrometer-registry-prometheus.version}</version>
-</dependency>
 ```
 
 ---
@@ -4463,19 +4695,17 @@ hogy a szoftver bármelyik pillanatban kiadható
 
 ## Példa pipeline
 
+`Jenkinsfile` tartalma:
+
 .small-code-14[
 ```groovy
 pipeline {
    agent any
 
-   tools {
-      jdk 'jdk-13'
-   }
-
    stages {
       stage('package') {
          steps {
-            git 'http://gitlab.training360.com/trainers/employees-ci'
+            git 'https://github.com/vicziain/employees'
 
             sh "./mvnw clean package"
          }
@@ -4492,46 +4722,22 @@ pipeline {
 
 ---
 
-## Jenkins pipeline grafikusan
+## Maven Failsafe plugin
 
-<img src="images/jenkins-pipeline.png" alt="Jenkins pipeline" width="500">
-
----
-
-## Jenkins előkészítése
-
-`training360/jenkins-jdk13` repository: előretelepített AdoptOpenJDK 13
-
-```shell
-docker run -p 8082:8080 -p 50000:50000 --name jenkins jenkins/jenkins:lts
-
-docker run -p 8082:8080 -p 50000:50000 --name jenkins training360/jenkins-jdk13
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-failsafe-plugin</artifactId>
+    <version>2.22.2</version>
+    <executions>
+    	<execution>
+             <goals>
+                 <goal>integration-test</goal>
+             </goals>
+    	</execution>
+    </executions>
+</plugin>
 ```
-
-* Unlock Jenkins (password a logból)
-* Selet Plugins to install (Git, Pipeline, Pipeline: Stage View)
-* Create Admin User
-* Instance Configuration
-
----
-
-## Java13 beállítása
-
-* Jenkins kezelése/Global Tool Configuration
-* Add JDK
-    * Name: `jdk-13`
-    * JAVA_HOME: `/usr/lib/jvm/adoptopenjdk-13-hotspot-amd64/`
-
----
-
-## Job létrehozása
-
-* Új Item
-* Projektnév megadása, pl. `employees`
-* Pipeline
-* Pipeline/Definition Pipeline script from SCM
-* Git
-* Repository URL kitöltése, pl. `https://github.com/Training360/employees`
 
 ---
 
@@ -4543,6 +4749,43 @@ git update-index --chmod=+x mvnw
 
 * Letölti a Mavent
 * Maven letölti a függőségeket
+
+---
+
+## Jenkins pipeline grafikusan
+
+<img src="images/jenkins-pipeline.png" alt="Jenkins pipeline" width="500">
+
+---
+
+## Dockerfile
+
+```dockerfile
+FROM jenkins/jenkins:lts-jdk11
+ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
+
+RUN jenkins-plugin-cli --plugins "git workflow-aggregator pipeline-stage-view blueocean"
+```
+
+---
+
+## Jenkins előkészítése
+
+```shell
+docker build --file Dockerfile.jenkins -t employees-jenkins .
+
+docker run -d -p 8082:8080 --name employees-jenkins employees-jenkins
+```
+---
+
+## Job létrehozása
+
+* Új Item
+* Projektnév megadása, pl. `employees`
+* Pipeline
+* Pipeline/Definition Pipeline script from SCM
+* Git
+* Repository URL kitöltése, pl. `https://github.com/vicziain/employees`
 
 ---
 

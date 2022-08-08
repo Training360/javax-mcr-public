@@ -1,0 +1,49 @@
+###
+GET http://localhost:8080/
+
+
+###
+GET http://localhost:8080/api/employees/
+Accept: application/json
+
+###
+GET http://localhost:8080/api/employees/3
+Accept: application/json
+
+###
+GET http://localhost:8080/api/employees/
+Accept: application/xml
+
+###
+GET http://localhost:8080/api/employees/1
+Accept: application/xml
+
+###
+POST http://localhost:8080/api/employees
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Jane Doe"
+}
+
+### Validation
+POST http://localhost:8080/api/employees
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Xxxx"
+}
+
+###
+PUT http://localhost:8080/api/employees/3
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "John Jack Doe"
+}
+
+###
+DELETE http://localhost:8080/api/employees/2

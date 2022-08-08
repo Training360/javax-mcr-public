@@ -1,0 +1,23 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('package') {
+            steps {
+                git 'https://github.com/vicziani/employees'
+
+                sh './mvnw clean package'
+            }
+        }
+        stage('test') {
+            steps {
+                sh './mvnw verify'
+            }
+        }
+        stage('sonar') {
+            steps {
+                sh './mvnw -Dsonar.host.url=http://employees-sonarqube:9000 -Dsonar.login=admin -Dsonar.password=admin12 sonar:sonar'
+            }
+        }
+    }
+}
