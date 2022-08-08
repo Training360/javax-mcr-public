@@ -5,6 +5,7 @@ Ez a repository tartalmazza a JAVAX-MCR tanfolyam gyakorlati feladatait.
 Tartalma:
 
 * [javax-mcr-lab.md](javax-mcr-lab.md) - Gyakorlati feladatok szöveges leírása.
+* [labs](labs) - Gyakorlati feladatok referenciamegoldása. 
 * [demos-on-videos](demos-on-videos) - Videókon szereplő gyakorlati feladatok.
 * [slides/javax-mcr-slides.md](slides/javax-mcr-slides.md) - Videón szereplő, de azóta módosított slide-ok.
 * [apps/employees-addresses](apps/employees-addresses) - _Addresses_ alkalmazás, melyhez REST-en keresztül lehet integrálni az _Employees_ alkalmazást. 
