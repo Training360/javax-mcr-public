@@ -1,0 +1,198 @@
+Index: demos-on-videos/employees-m02-l04-p03-spring-problem/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/demos-on-videos/employees-m02-l04-p03-spring-problem/pom.xml b/demos-on-videos/employees-m02-l04-p03-spring-problem/pom.xml
+--- a/demos-on-videos/employees-m02-l04-p03-spring-problem/pom.xml	(revision 32a79d921fbe519df3b0904b47d60330652c13f6)
++++ b/demos-on-videos/employees-m02-l04-p03-spring-problem/pom.xml	(revision 5b117f01a336c032272daa1eb92fb81fdbdb2b81)
+@@ -5,7 +5,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.boot</groupId>
+ 		<artifactId>spring-boot-starter-parent</artifactId>
+-		<version>2.3.3.RELEASE</version>
++		<version>3.0.0</version>
+ 		<relativePath/> <!-- lookup parent from repository -->
+ 	</parent>
+ 	<groupId>microservices.training</groupId>
+@@ -15,7 +15,7 @@
+ 	<description>Demo project for Spring Boot</description>
+ 
+ 	<properties>
+-		<java.version>14</java.version>
++		<java.version>17</java.version>
+ 	</properties>
+ 
+ 	<dependencies>
+@@ -39,18 +39,6 @@
+ 			<artifactId>modelmapper</artifactId>
+ 			<version>2.3.8</version>
+ 		</dependency>
+-
+-		<dependency>
+-			<groupId>org.zalando</groupId>
+-			<artifactId>problem</artifactId>
+-			<version>0.24.0</version>
+-		</dependency>
+-
+-		<dependency>
+-			<groupId>org.zalando</groupId>
+-			<artifactId>jackson-datatype-problem</artifactId>
+-			<version>0.24.0</version>
+-		</dependency>
+ 
+ 		<dependency>
+ 			<groupId>org.springframework.boot</groupId>
+Index: demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeeNotFoundException.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeeNotFoundException.java b/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeeNotFoundException.java
+new file mode 100644
+--- /dev/null	(revision 5b117f01a336c032272daa1eb92fb81fdbdb2b81)
++++ b/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeeNotFoundException.java	(revision 5b117f01a336c032272daa1eb92fb81fdbdb2b81)
+@@ -0,0 +1,8 @@
++package employees;
++
++public class EmployeeNotFoundException extends RuntimeException {
++
++    public EmployeeNotFoundException(String message) {
++        super(message);
++    }
++}
+Index: demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesApplication.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesApplication.java b/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesApplication.java
+--- a/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesApplication.java	(revision 32a79d921fbe519df3b0904b47d60330652c13f6)
++++ b/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesApplication.java	(revision 5b117f01a336c032272daa1eb92fb81fdbdb2b81)
+@@ -1,6 +1,5 @@
+ package employees;
+ 
+-import com.fasterxml.jackson.databind.ObjectMapper;
+ import org.modelmapper.ModelMapper;
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
+@@ -23,9 +22,4 @@
+ 		return new ModelMapper();
+ 	}
+ 
+-	@Bean
+-	public ObjectMapper objectMapper() {
+-		return new ObjectMapper().findAndRegisterModules();
+-	}
+-
+ }
+Index: demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesController.java b/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesController.java
+--- a/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesController.java	(revision 32a79d921fbe519df3b0904b47d60330652c13f6)
++++ b/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesController.java	(revision 5b117f01a336c032272daa1eb92fb81fdbdb2b81)
+@@ -1,13 +1,8 @@
+ package employees;
+ 
+ import org.springframework.http.HttpStatus;
+-import org.springframework.http.MediaType;
+-import org.springframework.http.ResponseEntity;
+ import org.springframework.web.bind.annotation.*;
+-import org.zalando.problem.Problem;
+-import org.zalando.problem.Status;
+ 
+-import java.net.URI;
+ import java.util.List;
+ import java.util.Optional;
+ 
+@@ -58,19 +53,4 @@
+         employeesService.deleteEmployee(id);
+     }
+ 
+-    @ExceptionHandler(IllegalArgumentException.class)
+-    @ResponseStatus(HttpStatus.NOT_FOUND)
+-    public ResponseEntity<Problem> handleNotFound(IllegalArgumentException iae) {
+-        Problem problem =
+-                Problem.builder()
+-                    .withType(URI.create("employees/not-found"))
+-                .withTitle("Not found")
+-                .withStatus(Status.NOT_FOUND)
+-                .withDetail(iae.getMessage())
+-                .build();
+-        return ResponseEntity
+-                .status(HttpStatus.NOT_FOUND)
+-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+-                .body(problem);
+-    }
+ }
+Index: demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesService.java b/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesService.java
+--- a/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesService.java	(revision 32a79d921fbe519df3b0904b47d60330652c13f6)
++++ b/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/EmployeesService.java	(revision 5b117f01a336c032272daa1eb92fb81fdbdb2b81)
+@@ -39,7 +39,7 @@
+     public EmployeeDto findEmployeeById(long id) {
+         return modelMapper.map(employees.stream()
+                 .filter(e -> e.getId() == id).findAny()
+-                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + id)),
++                .orElseThrow(() -> new EmployeeNotFoundException("Employee not found: " + id)),
+                 EmployeeDto.class);
+     }
+ 
+@@ -52,7 +52,7 @@
+     public EmployeeDto updateEmployee(long id, UpdateEmployeeCommand command) {
+         Employee employee = employees.stream()
+                 .filter(e -> e.getId() == id)
+-                .findFirst().orElseThrow(() -> new IllegalArgumentException("Employee not found: " + id));
++                .findFirst().orElseThrow(() -> new EmployeeNotFoundException("Employee not found: " + id));
+         employee.setName(command.getName());
+         return modelMapper.map(employee, EmployeeDto.class);
+     }
+@@ -60,7 +60,7 @@
+     public void deleteEmployee(long id) {
+         Employee employee = employees.stream()
+                 .filter(e -> e.getId() == id)
+-                .findFirst().orElseThrow(() -> new IllegalArgumentException("Employee not found: " + id));
++                .findFirst().orElseThrow(() -> new EmployeeNotFoundException("Employee not found: " + id));
+         employees.remove(employee);
+     }
+ }
+Index: demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/NotFoundExceptionHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/NotFoundExceptionHandler.java b/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/NotFoundExceptionHandler.java
+new file mode 100644
+--- /dev/null	(revision 5b117f01a336c032272daa1eb92fb81fdbdb2b81)
++++ b/demos-on-videos/employees-m02-l04-p03-spring-problem/src/main/java/employees/NotFoundExceptionHandler.java	(revision 5b117f01a336c032272daa1eb92fb81fdbdb2b81)
+@@ -0,0 +1,23 @@
++package employees;
++
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ProblemDetail;
++import org.springframework.web.bind.annotation.ControllerAdvice;
++import org.springframework.web.bind.annotation.ExceptionHandler;
++
++import java.net.URI;
++import java.util.UUID;
++
++@ControllerAdvice
++public class NotFoundExceptionHandler {
++
++    @ExceptionHandler(EmployeeNotFoundException.class)
++    public ProblemDetail handleNotFoundException(EmployeeNotFoundException nfe) {
++        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,
++                String.format(nfe.getMessage()));
++        problemDetail.setType(URI.create("employees/employee-not-found"));
++        problemDetail.setTitle("Not found");
++        problemDetail.setProperty("id", UUID.randomUUID().toString());
++        return problemDetail;
++    }
++}
