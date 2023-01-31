@@ -176,6 +176,12 @@ réteg lefedettsége!
 Amennyiben időd engedi, mindegyik metódusra írj, legyen közel 100%-os a controller
 réteg lefedettsége!
 
+### WebClient
+
+Írj legalább egy Controller metódusra WebClient integrációs tesztet!
+Amennyiben időd engedi, mindegyik metódusra írj, legyen közel 100%-os a controller
+réteg lefedettsége!
+
 ## Swagger UI
 
 Integráld az alkalmazásodba a Swagger UI-t! Paraméterezd, hogy
