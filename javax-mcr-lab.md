@@ -151,6 +151,10 @@ Lehessen kedvenc helyet módosítani és törölni is. Ehhez szükséged lesz eg
 `UpdateLocationCommand` osztályra is. Lehessen módosítani a nevet és
 a koordinátákat is.
 
+## MapStruct
+
+Írd át a projektet úgy, ne ModelMapperrel, hanem MapStructtal működjön!
+
 ## Státuszkódok és hibakezelés
 
 Módosítsd az alkalmazásod, hogy létrehozáskor `201`-es státuszkóddal,
