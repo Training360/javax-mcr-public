@@ -259,10 +259,6 @@ a perzisztens rétegbe!
 
 Cseréld le a perzisztens réteget Spring Data JPA alapúra!
 
-## H2
-
-Állítsd be úgy az alkalmazást, hogy H2 adatbázisba mentse le az adatokat!
-
 ## MariaDB
 
 Indíts el egy MariaDB adatbázist! Konfiguráld az alkalmazást, hogy
@@ -272,7 +268,11 @@ Amennyien a PostgreSQL-hez jobban értesz, használhatod azt is!
 
 ## Integrációs tesztelés
 
-### Repo tesztelése
+## H2
+
+Állítsd be úgy az alkalmazást, hogy H2 adatbázisba mentse le az adatokat!
+
+### Repository réteg tesztelése
 
 Írj egy repository-t tesztelő integrációs tesztet! 
 Amennyiben van időd, érdemes közel 100%-os lefedettséget produkálni, 
