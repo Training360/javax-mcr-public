@@ -268,10 +268,6 @@ Amennyien a PostgreSQL-hez jobban értesz, használhatod azt is!
 
 ## Integrációs tesztelés
 
-## H2
-
-Állítsd be úgy az alkalmazást, hogy H2 adatbázisba mentse le az adatokat!
-
 ### Repository réteg tesztelése
 
 Írj egy repository-t tesztelő integrációs tesztet! 
