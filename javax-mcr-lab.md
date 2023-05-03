@@ -259,6 +259,10 @@ a perzisztens rétegbe!
 
 Cseréld le a perzisztens réteget Spring Data JPA alapúra!
 
+## H2
+
+Állítsd be úgy az alkalmazást, hogy H2 adatbázisba mentse le az adatokat!
+
 ## MariaDB
 
 Indíts el egy MariaDB adatbázist! Konfiguráld az alkalmazást, hogy
