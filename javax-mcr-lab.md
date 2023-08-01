@@ -151,6 +151,10 @@ Lehessen kedvenc helyet módosítani és törölni is. Ehhez szükséged lesz eg
 `UpdateLocationCommand` osztályra is. Lehessen módosítani a nevet és
 a koordinátákat is.
 
+## MapStruct
+
+Írd át a projektet úgy, ne ModelMapperrel, hanem MapStructtal működjön!
+
 ## Státuszkódok és hibakezelés
 
 Módosítsd az alkalmazásod, hogy létrehozáskor `201`-es státuszkóddal,
@@ -173,6 +177,12 @@ réteg lefedettsége!
 ### RestTemplate
 
 Írj legalább egy Controller metódusra RestTemplate integrációs tesztet!
+Amennyiben időd engedi, mindegyik metódusra írj, legyen közel 100%-os a controller
+réteg lefedettsége!
+
+### WebClient
+
+Írj legalább egy Controller metódusra WebClient integrációs tesztet!
 Amennyiben időd engedi, mindegyik metódusra írj, legyen közel 100%-os a controller
 réteg lefedettsége!
 
@@ -258,7 +268,7 @@ Amennyien a PostgreSQL-hez jobban értesz, használhatod azt is!
 
 ## Integrációs tesztelés
 
-### Repo tesztelése
+### Repository réteg tesztelése
 
 Írj egy repository-t tesztelő integrációs tesztet! 
 Amennyiben van időd, érdemes közel 100%-os lefedettséget produkálni, 

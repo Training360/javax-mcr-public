@@ -1,0 +1,73 @@
+###
+GET http://localhost:8080/api/locations/
+Accept: application/json
+
+###
+GET http://localhost:8080/api/locations/2
+Accept: application/json
+
+###
+#GET http://localhost:8080/api/locations/2
+#Accept: application/xml
+
+###
+POST http://localhost:8080/api/locations
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Moszkva",
+  "lat": 55.76961,
+  "lon": 37.63722
+}
+
+###
+PUT http://localhost:8080/api/locations/3
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Bécs",
+  "lat": 48.19320,
+  "lon": 16.35887
+}
+
+###
+DELETE http://localhost:8080/api/locations/2
+
+###
+POST http://localhost:8080/api/locations
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Moszkva",
+  "lat": 55.76961,
+  "lon": 37.63722
+}
+
+### Validation
+POST http://localhost:8080/api/locations
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "lat": 55.76961,
+  "lon": 37.63722
+}
+
+### Validation @Coordinate
+POST http://localhost:8080/api/locations
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Moszkva",
+  "lat": 55.76961,
+  "lon": -181.0
+}
+
+###
+#GET http://localhost:8080/api/locations/
+#Accept: application/xml

@@ -76,15 +76,9 @@ public class LocationsService {
 
     // GET műveletek paraméterezése
     public LocationDto findLocationById(long id) {
-//        return modelMapper.map(
-        return locationMapper.toDto(
-                locations.stream()
-                        .filter(location -> location.getId() == id)
-                        .findAny()
-//                        .orElseThrow(() -> new LocationNotFoundException("Location not found: " + id))
-                        .orElseThrow(() -> new LocationNotFoundException(id))
-//                , LocationDto.class
-        );
+        Location location = getLocationById(id);
+//        return modelMapper.map(location, LocationDto.class);
+        return locationMapper.toDto(location);
     }
 
     // REST webszolgáltatások POST és DELETE művelet - Create
@@ -108,11 +102,7 @@ public class LocationsService {
 
     // REST webszolgáltatások POST és DELETE művelet - Update
     public LocationDto updateLocation(long id, UpdateLocationCommand command) {
-        Location location = locations.stream()
-                .filter(l -> l.getId() == id)
-                .findFirst()
-//                .orElseThrow(() -> new LocationNotFoundException("Location not found: " + id));
-                .orElseThrow(() -> new LocationNotFoundException(id));
+        Location location = getLocationById(id);
         location.setName(command.getName());
         location.setLatitude(command.getLatitude());
         location.setLongitude(command.getLongitude());
@@ -126,11 +116,7 @@ public class LocationsService {
 
     // REST webszolgáltatások POST és DELETE művelet - Delete
     public void deleteLocation(long id) {
-        Location location = locations.stream()
-                .filter(l -> l.getId() == id)
-                .findFirst()
-//                .orElseThrow(() -> new LocationNotFoundException("Location not found: " + id));
-                .orElseThrow(() -> new LocationNotFoundException(id));
+        Location location = getLocationById(id);
         locations.remove(location);
 
         // Spring Boot naplózás
@@ -140,5 +126,13 @@ public class LocationsService {
     public void deleteAllLocations() {
         idGenerator = new AtomicLong();
         locations.clear();
+    }
+
+    private Location getLocationById(long id) {
+        return locations.stream()
+                .filter(l -> l.getId() == id)
+                .findFirst()
+//                .orElseThrow(() -> new LocationNotFoundException("Location not found: " + id));
+                .orElseThrow(() -> new LocationNotFoundException(id));
     }
 }
