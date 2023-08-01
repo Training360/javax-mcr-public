@@ -25,9 +25,9 @@ public class EmployeesController {
         this.employeesService = employeesService;
     }
 
-    @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-    public List<EmployeeDto> listEmployees(@RequestParam Optional<String> prefix) {
-        return employeesService.listEmployees(prefix);
+    @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, "text/xml;charset=UTF-8"})
+    public EmployeesDto listEmployees(@RequestParam Optional<String> prefix) {
+        return new EmployeesDto(employeesService.listEmployees(prefix));
     }
 
     @GetMapping(value = "/{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
@@ -45,7 +45,7 @@ public class EmployeesController {
 //        }
 //    }
 
-    @PostMapping
+    @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, "text/xml;charset=UTF-8"}, consumes = {MediaType.APPLICATION_JSON_VALUE, "text/xml;charset=UTF-8"})
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "creates an employee")
     @ApiResponse(responseCode = "201", description = "employee has been created")
