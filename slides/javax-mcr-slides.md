@@ -281,7 +281,7 @@ public class EmployeesService {
 @Controller
 public class EmployeesController {
 
-    private final EmployeesService employeesService;
+    private EmployeesService employeesService;
 
     public EmployeesController(EmployeesService employeesService) {
         this.employeesService = employeesService;
@@ -504,7 +504,7 @@ public class EmployeesControllerTest {
 
 ```java
 @SpringBootTest
-public class EmployeesControllerIT {
+class EmployeesControllerIT {
 
   @Autowired
   EmployeesController employeesController;
@@ -789,10 +789,10 @@ class: inverse, center, middle
 `Dockerfile` fájl tartalma:
 
 ```dockerfile
-FROM adoptopenjdk:14-jre-hotspot
-WORKDIR /opt/app
+FROM eclipse-temurin:17
+WORKDIR app
 COPY target/*.jar employees.jar
-CMD ["java", "-jar", "employees.jar"]
+ENTRYPOINT ["java", "-jar", "employees.jar"]
 ```
 
 Parancsok:
@@ -857,11 +857,10 @@ docker run -d -p 8080:8080 employees
 ## Dockerfile
 
 ```dockerfile
-FROM adoptopenjdk:14-jre-hotspot
-RUN mkdir /opt/app
-ADD maven/${project.artifactId}-${project.version}.jar \
-  /opt/app/employees.jar
-CMD ["java", "-jar", "/opt/app/employees.jar"]
+FROM eclipse-temurin:17
+WORKDIR app
+COPY maven/${project.artifactId}-${project.version}.jar employees.jar
+ENTRYPOINT ["java", "-jar", "employees.jar"]
 ```
 
 Property placeholder
@@ -931,12 +930,12 @@ java -cp BOOT-INF\classes;BOOT-INF\lib\* training.employees.EmployeesApplication
 * [Multi-stage build](https://docs.docker.com/develop/develop-images/multistage-build/)
   
 ```dockerfile
-FROM adoptopenjdk:14-jdk-hotspot as builder
+FROM eclipse-temurin:17 as builder
 WORKDIR app
-COPY target/employees-0.0.1-SNAPSHOT.jar employees.jar
+COPY target/*.jar employees.jar
 RUN jar xvf employees.jar
 
-FROM adoptopenjdk:14-jre-hotspot
+FROM eclipse-temurin:17
 WORKDIR app
 COPY --from=builder app/BOOT-INF/lib lib
 COPY --from=builder app/META-INF META-INF
@@ -994,17 +993,17 @@ java -Djarmode=layertools -jar target/employees-0.0.1-SNAPSHOT.jar extract
 ## Dockerfile
 
 ```dockerfile
-FROM adoptopenjdk:14-jre-hotspot as builder
-WORKDIR application
-COPY target/employees-0.0.1-SNAPSHOT.jar employees.jar
+FROM eclipse-temurin:17 as builder
+WORKDIR app
+COPY target/*.jar employees.jar
 RUN java -Djarmode=layertools -jar employees.jar extract
 
-FROM adoptopenjdk:14-jre-hotspot
-WORKDIR application
-COPY --from=builder application/dependencies/ ./
-COPY --from=builder application/spring-boot-loader/ ./
-COPY --from=builder application/snapshot-dependencies/ ./
-COPY --from=builder application/application/ ./
+FROM eclipse-temurin:17
+WORKDIR app
+COPY --from=builder app/dependencies/ ./
+COPY --from=builder app/spring-boot-loader/ ./
+COPY --from=builder app/snapshot-dependencies/ ./
+COPY --from=builder app/application/ ./
 ENTRYPOINT ["java", \
   "org.springframework.boot.loader.JarLauncher"]
 ```
@@ -1241,7 +1240,7 @@ Elérhető a `/api/employees?prefix=Jack` címen
 
 ```java
 public List<EmployeeDto> listEmployees(QueryParameters parameters) {
-   return employeesService.listEmployees(prefix);
+   return employeesService.listEmployees(parameters);
 }
 ```
 
@@ -1563,14 +1562,15 @@ public class EmployeeNotFoundException extends AbstractThrowableProblem {
 
 ---
 
-## Problem könyvtártól független kivétel
+## Problem könyvtártól független <br /> kivétel
 
 ```java
 @ControllerAdvice
 public class EmployeesExceptionHandler implements ProblemHandling {
 
     @ExceptionHandler
-    ResponseEntity<Problem> handleException(EmployeeNotFoundException exception, NativeWebRequest request) {
+    ResponseEntity<Problem> handleException(EmployeeNotFoundException exception,
+            NativeWebRequest request) {
         Problem problem =
             Problem.builder()
                 .withType(URI.create("employees/employee-not-found"))
@@ -1730,7 +1730,7 @@ Request parameter (query parameter)
 webClient.get().uri(builder -> builder.path("/api/employees").queryParam("prefix", "j").build())
 ```
 
-`Function`
+Paraméterként `Function`
 
 ---
 
@@ -1822,7 +1822,6 @@ public OpenAPI customOpenAPI() {
 ```java
 public class CreateEmployeeCommand {
 
-    @NotNull
     @Schema(description="name of the employee", example = "John Doe")
     private String name;
 }
@@ -2711,9 +2710,9 @@ private Employee convertEmployee(ResultSet resultSet, int i)
 .small-code-14[
 ```java
 @Component
+@AllArgsConstructor
 public class DbInitializer implements CommandLineRunner {
 
-  @Autowired
   private JdbcTemplate jdbcTemplate;
 
   @Override
@@ -3445,7 +3444,7 @@ public EmployeeDto updateEmployee(String id, UpdateEmployeeCommand command) {
 ## Konzol
 
 ```shell
-docker exec -it employees-mongo mongo employees
+docker exec -it employees-mongo mongosh employees
 ```
 
 ```javascript
@@ -3564,11 +3563,12 @@ curl -s --data "grant_type=password&client_id=employees-app&username=johndoe&pas
 
 .small-code-14[
 ```http
-POST http://localhost:8081/auth/realms/Employees/protocol/openid-connect/token
+POST http://localhost:8081/auth/realms/EmployeesRealm/protocol/openid-connect/token
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=password&client_id=employees-app&username=johndoe&password=johndoe
 ```
+]
 
 * A https://jws.io címen ellenőrizhető
 
@@ -3623,7 +3623,7 @@ Be kell írni egy létező scope-ot (pl. `profile`), mert üreset nem tud értel
 .small-code-14[
 ```properties
 keycloak.auth-server-url=http://localhost:8081/auth
-keycloak.realm=Employees
+keycloak.realm=EmployeesRealm
 keycloak.resource=employees-app
 keycloak.bearer-only=true
 
@@ -3756,6 +3756,36 @@ public class AddressesGateway {
     }
 }
 ```
+
+---
+
+## Nagyvállalati megoldás
+
+* Konfiguráció `@ConfigurationProperties` használatával
+* Saját annotáció
+* Hibakezelés
+* Thread-ek száma
+* Timeout
+
+.small-code-14[
+```java
+String connectionProviderName = "myConnectionProvider";
+HttpClient httpClient = HttpClient.create(ConnectionProvider.create(connectionProviderName, 5));
+
+WebClient webClient = WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient))
+        .baseUrl(gatewayProperties.getUrl())
+        .build();
+
+return webClient
+        .get()
+        .uri(builder -> builder.path("/api/addresses").queryParam("name", name).build())
+        .retrieve()
+        .bodyToMono(AddressDto.class)
+        .timeout(Duration.parse("PT5S"))
+        .onErrorReturn(new AddressDto())
+        .block();
+```
+]
 
 ---
 
@@ -4319,6 +4349,9 @@ management.endpoint.health.show-details = always
 * `info` prefixszel megadott property-k belekerülnek
 
 ```properties
+# Spring Boot 2.6 óta
+management.info.env.enabled=true
+
 info.appname = employees
 ```
 
@@ -4389,7 +4422,43 @@ docker run --rm -it jolokia/jmx4perl jmx4perl
 
 class: inverse, center, middle
 
-# Git információk megjelenítése
+# Build és Git információk megjelenítése
+
+---
+
+## Build információk megjelenítése
+
+.small-code-14[
+```xml
+<plugin>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-maven-plugin</artifactId>
+    <executions>
+        <execution>
+            <goals>
+                <goal>build-info</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+```
+]
+
+A `target/classes/META-INF` könyvtárban `build-info.properties` fájl 
+
+.small-code-14[
+```json
+{
+    "build": {
+        "artifact": "employees",
+        "name": "employees",
+        "time": "2022-10-05T20:50:03.216Z",
+        "version": "0.0.1-SNAPSHOT",
+        "group": "training"
+    }
+}
+```
+]
 
 ---
 
@@ -4541,7 +4610,6 @@ Felhasználó/jelszó: `root`/`root`
 <dependency>
   <groupId>io.micrometer</groupId>
   <artifactId>micrometer-registry-graphite</artifactId>
-  <version>${micrometer-registry-graphite.version}</version>
 </dependency>
 ```
 
@@ -4566,7 +4634,6 @@ class: inverse, center, middle
 <dependency>
   <groupId>io.micrometer</groupId>
   <artifactId>micrometer-registry-prometheus</artifactId>
-  <version>${micrometer-registry-prometheus.version}</version>
 </dependency>
 ```
 ---
