@@ -67,37 +67,4 @@ public class EmployeesController {
         employeesService.deleteEmployee(id);
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ResponseEntity<ProblemDetail> handleNotFound(IllegalArgumentException iae) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,
-                String.format(iae.getMessage()));
-        problemDetail.setType(URI.create("employees/employee-not-found"));
-        problemDetail.setTitle("Not found");
-        problemDetail.setProperty("id", UUID.randomUUID().toString());
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problemDetail);
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ProblemDetail> handleValidException(MethodArgumentNotValidException exception) {
-        List<Violation> violations =
-                exception.getBindingResult().getFieldErrors().stream()
-                .map(fe -> new Violation(fe.getField(), fe.getDefaultMessage()))
-                .collect(Collectors.toList());
-
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
-                String.format(exception.getMessage()));
-        problemDetail.setType(URI.create("employees/not-valid"));
-        problemDetail.setTitle("Validation error");
-        problemDetail.setProperty("id", UUID.randomUUID().toString());
-        problemDetail.setProperty("violations", violations);
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problemDetail);
-    }
 }

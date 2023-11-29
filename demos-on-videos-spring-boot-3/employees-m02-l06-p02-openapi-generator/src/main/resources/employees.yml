@@ -1,0 +1,140 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+  - url: http://localhost:8080/api
+    description: Generated server url
+paths:
+  /employees:
+    get:
+      tags:
+        - Operations on employees
+      operationId: listEmployees
+      summary: list employees
+      parameters:
+        - name: prefix
+          in: query
+          required: false
+          schema:
+            type: string
+            description: prefix of the name of the employee
+            example: John
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmployeeResponse'
+                description: the employees match to the query criteria
+    post:
+      tags:
+        - Operations on employees
+      summary: creates an employee
+      operationId: createEmployee
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeRequest'
+        required: true
+      responses:
+        "201":
+          description: employee has been created
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EmployeeResponse'
+  /employees/{id}:
+    get:
+      tags:
+        - Operations on employees
+      operationId: findEmployeeById
+      summary: find employee by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            description: id of the employee
+            example: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EmployeeResponse'
+    put:
+      tags:
+        - Operations on employees
+      operationId: updateEmployee
+      summary: update an employee
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            description: id of the employee
+            example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeRequest'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EmployeeResponse'
+    delete:
+      tags:
+        - Operations on employees
+      operationId: deleteEmployee
+      summary: delete an employee
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            description: id of the employee
+            example: 1
+      responses:
+        "204":
+          description: No Content
+components:
+  schemas:
+    EmployeeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: id of the employee
+          example: 0
+        name:
+          type: string
+          description: name of the employee
+          example: John Doe
+    EmployeeRequest:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: .+
+          description: name of the employee
+          example: John Doe
