@@ -9,15 +9,6 @@ Tartalma:
 * [demos-on-videos](demos-on-videos) - Videókon szereplő gyakorlati feladatok.
 * [demos-on-videos-spring-boot-3](demos-on-videos-spring-boot-3) - Spring Boot 3-ra frissített gyakorlati feladatok.
 * [slides/javax-mcr-slides.md](slides/javax-mcr-slides.md) - Videón szereplő, de azóta módosított slide-ok.
-* [apps/employees-addresses](apps/employees-addresses) - _Addresses_ alkalmazás, melyhez REST-en keresztül lehet integrálni az _Employees_ alkalmazást. 
- Alkalmazottakhoz tartozó címeket lehet lekérdezni.
- A forráskódra valójában nincs szükség, hiszen Docker konténerben indítható.
-* [apps/employees-eventstore](apps/employees-eventstore) - _EventStore_ alkalmazás, melyhez REST-en és JMS-en keresztül lehet integrálni az _Employees_ alkalmazást. 
- Eseményekről lehet az alkalmazást értesíteni, amiket naplóz.
- A forráskódra valójában nincs szükség, hiszen Docker konténerben indítható.
-* [apps/employees-timesheet](apps/employees-timesheet) - _TimeSheet_ alkalmazás, melyhez gRPC-vel lehet kapcsolódni.
- Alkalmazottakhoz tartozó munkaidő nyilvántartásokat tartalmazza.
- A forráskódra valójában nincs szükség, hiszen Docker konténerben indítható.
 
 ## Videón szereplő gyakorlati feladatok
 
@@ -67,25 +58,3 @@ Tartalma:
     * Spring Data JPA - (`javax-mcr-m04-l02-spring-data-jpa`)
     * MariaDB
     * Integrációs tesztelés
-* NoSQL
-    * MongoDB (`employees-m05-mongodb`)
-* Security
-    * OAUTH 2.0 KeyCloak szerverrel (`employees-m06-keycloak`)
-* Integráció
-    * RestTemplate (`employees-m07-l01-p01-resttemplate`)
-    * WebClient (`employees-m07-l01-p02-webclient`)
-    * WireMock (`employees-m07-l02-p01-wiremock`)
-    * Spring Cloud Contract WireMock (`employees-m07-l02-p02-cloud-wiremock`)
-    * JMS üzenet küldése (`employees-m07-l03-jms`)
-    * JMS üzenet fogadása
-* Actuator (`employees-m08-actuator`)
-    * Actuator 
-    * Információk megjelenítése
-    * Naplózás
-    * Metrics
-    * Metrics Prometheus Monitoring eszközzel
-    * Audit Events
-* Continuous Integration és Delivery (`employees-m09-cicd`)
-    * Continuous Delivery Jenkins Pipeline-nal
-
-

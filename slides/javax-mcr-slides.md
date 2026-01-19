@@ -966,6 +966,8 @@ ENTRYPOINT ["java", "-cp", "classes:lib/*", \
 
 ## Layered JAR
 
+2.3.0.M2 verziónál, azóta ez a default
+
 ```xml
 <plugin>
   <groupId>org.springframework.boot</groupId>
@@ -1338,66 +1340,38 @@ public void deleteEmployee(@PathVariable("id") long id) {
 
 class: inverse, center, middle
 
-# Státuszkódok és hibakezelés
+# REST legjobb gyakorlatok
 
 ---
 
-## Státuszkód állítása controller metódusból
+## Legjobb gyakorlatok
 
-* `ResponseEntity` visszatérési típus: státuszkód, header, body, stb.
-
-```java
-@GetMapping("/{id}")
-public ResponseEntity findEmployeeById(@PathVariable("id") long id) {
-    try {
-        return ResponseEntity.ok(employeesService.findEmployeeById(id));
-    }
-    catch (IllegalArgumentException iae) {
-        return ResponseEntity.notFound().build();
-    }
-}
-```
+* Használjunk mindig főneveket, amit az erőforrásokat reprezentálják
+* Sose használjunk igéket
+* Használjunk mindig többesszámot
+* Használjunk kisbetűket és kötőjeleket elválasztásra
+* Használjunk alerőforrásokat
 
 ---
 
-## 201 - CREATED státuszkód
+## Példa URL-ek
 
-```java
-@PostMapping
-@ResponseStatus(HttpStatus.CREATED)
-public EmployeeDto createEmployee(
-    @RequestBody CreateEmployeeCommand command) {
-  return employeesService.createEmployee(command);
-}
-```
+* `/api/employees`
+* ~~`/api/findEmployees`~~
+* `/api/employees/1`
+* ~~`/api/employees/create`~~
+* ~~`/api/creeateEmployee`~~
+* ~~`/api/employees/delete`~~
+* ~~`/api/employees/close`~~
+* `/api/stereo-receivers`
+* `/api/employees/1/addresses/1`
+* ~~`/api/employeeService/findEmployeeById`~~
 
 ---
 
-## 201 - Location header
+class: inverse, center, middle
 
-```java
-@PostMapping
-public ResponseEntity<EmployeeDto> createEmployee(@RequestBody CreateEmployeeCommand command, 
-        UriComponentsBuilder uri) {
-    EmployeeDto employeeDto = employeeService.createEmployee(command);
-    return ResponseEntity
-        .created(uri.path("/api/employees/{id}").buildAndExpand(employeeDto.getId()).toUri())
-        .body(employeeDto);
-}
-```
-
-Unit teszt:
-
-```java
-UriComponentsBuilder builder = mock(UriComponentsBuilder.class);
-UriComponents components = mock(UriComponents.class);
-when(builder.path(any())).thenReturn(builder);
-when(builder.buildAndExpand(anyLong())).thenReturn(components);
-
-EmployeeDto employeeDto = employeesController
-    .createEmployee(new CreateEmployeeCommand("John Doe"), builder)
-    .getBody();
-```
+# Státuszkódok
 
 ---
 
@@ -1413,6 +1387,77 @@ public void deleteEmployee(@PathVariable("id") long id) {
 
 ---
 
+## Státuszkód állítása controller metódusból
+
+* `ResponseEntity` visszatérési típus: státuszkód, header, body, stb.
+
+```java
+@GetMapping("/{id}")
+public ResponseEntity<EmployeeDto> findEmployeeById(@PathVariable("id") long id) {
+    try {
+        return ResponseEntity
+                .ok()
+                .header("Response-Id", UUID.randomUUID().toString())
+                .body(employeesService.findEmployeeById(id));
+    }
+    catch (IllegalArgumentException iea) {
+        return ResponseEntity
+                .notFound()
+                .header("Response-Id", UUID.randomUUID().toString())
+                .build();
+    }
+}
+```
+
+---
+
+## 201 - CREATED
+
+* Location header megadása a HTTP szabvány szerint
+
+```java
+@PostMapping
+public ResponseEntity<EmployeeDto> createEmployee(@RequestBody CreateEmployeeCommand command, 
+        UriComponentsBuilder uri) {
+    EmployeeDto employeeDto = employeeService.createEmployee(command);
+    return ResponseEntity
+        .created(uri.path("/api/employees/{id}").buildAndExpand(employeeDto.getId()).toUri())
+        .body(employeeDto);
+}
+```
+
+---
+
+# Unit teszt
+
+```java
+@Test
+void createEmployee() {
+    EmployeeDto result = new EmployeeDto();
+    result.setId(1L);
+    result.setName("John Doe");
+    when(employeesService.createEmployee(any())).thenReturn(result);
+
+    CreateEmployeeCommand command = new CreateEmployeeCommand();
+    command.setName("John Doe");
+    UriComponentsBuilder builder = UriComponentsBuilder.fromUriString("http://localhost:8080");
+    
+    ResponseEntity<EmployeeDto> response = employeesController.createEmployee(command, builder);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    assertEquals(List.of("http://localhost:8080/api/employees/1"), 
+      response.getHeaders().get("Location"));
+    assertEquals("John Doe", response.getBody().getName());
+}
+```
+
+---
+
+class: inverse, center, middle
+
+# Hibakezelés
+
+---
+
 ## Alapértelmezett válasz hiba
 
 * Status code 500
@@ -1422,7 +1467,7 @@ public void deleteEmployee(@PathVariable("id") long id) {
   "timestamp": 1596570258672,
   "status": 500,
   "error": "Internal Server Error",
-  "message": "",
+  "message": "Employee not found: 3",
   "path": "/api/employees/3"
 }
 ```
@@ -1432,10 +1477,10 @@ public void deleteEmployee(@PathVariable("id") long id) {
 ## Hibakezelés
 
 * Servlet szabvány szerint `web.xml` állományban
-* Exceptionre tehető `@ResponseStatus` annotáció
-* Globálisan `ExceptionResolver` osztályokkal
 * `@ExceptionHandler` annotációval ellátott metódus a controllerben
 * `@ControllerAdvice` annotációval ellátott globális `@ExceptionHandler` <br /> annotációval ellátott metódus
+* Globálisan `ExceptionResolver` osztályokkal
+* Exceptionre tehető `@ResponseStatus` annotáció
 
 ---
 
@@ -1444,8 +1489,7 @@ public void deleteEmployee(@PathVariable("id") long id) {
 ```java
 @ExceptionHandler(IllegalArgumentException.class)
 @ResponseStatus(value = HttpStatus.NOT_FOUND)
-public void handleNotFound() {
-    System.out.println("Employee not found");
+public void handleNotFound() {    
 }
 ```
 
@@ -1458,10 +1502,14 @@ public void handleNotFound() {
 
 ```json
 {
-    "type": "employees/invalid-json-request",
-    "title": "JSON error",
-    "status": 400,
-    "detail": "JSON parse error: Unexpected character..."
+  "type": "employees/employee-not-found",
+  "title": "Not found",
+  "status": 404,
+  "detail": "Employee not found: 3",
+  "instance": "/api/employees/3",
+  "properties": {
+    "id": "e7439e5b-6144-4009-82d1-ae51f184ef01"
+  }
 }
 ```
 
@@ -1478,108 +1526,32 @@ public void handleNotFound() {
 
 ---
 
-## org.zalando:problem
+## Alapértelmezett működés <br /> bekapcsolása
 
-```xml
-<dependency>
-  <groupId>org.zalando</groupId>
-  <artifactId>problem</artifactId>
-  <version>${problem.version}</version>
-</dependency>
-<dependency>
-  <groupId>org.zalando</groupId>
-  <artifactId>jackson-datatype-problem</artifactId>
-  <version>${problem.version}</version>
-</dependency>
 ```
+spring.mvc.problemdetails.enabled = true
+```
+
+Pl. formai hibás JSON beküldésekor
 
 ---
 
-## A problem használata
-
-```java
-@ExceptionHandler({IllegalArgumentException.class})
-public ResponseEntity<Problem> handleNotFound(IllegalArgumentException  e) {
-    Problem problem = Problem.builder()
-            .withType(URI.create("employees/employee-not-found"))
-            .withTitle("Not found")
-            .withStatus(Status.NOT_FOUND)
-            .withDetail(e.getMessage())
-            .build();
-
-    return ResponseEntity
-      .status(HttpStatus.NOT_FOUND)
-    .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-      .body(problem);
-}
-```
-
-```java
-@Bean
-public ObjectMapper objectMapper() {
-  return new ObjectMapper()
-  .findAndRegisterModules();
-}
-```
-
----
-
-## problem-spring-web-starter
-
-* Integrált Spring MVC kivételkezelés és Problem 3rd-party library
-
-```xml
-<dependency>
-   <groupId>org.zalando</groupId>
-   <artifactId>problem-spring-web-starter</artifactId>
-   <version>0.26.2</version>
-</dependency>
-```
-
----
-
-## Hiba személyre szabása
-
-* Beépítetten több kivételt kezel
-* Vagy a `AbstractThrowableProblem` kivételtől származik a saját kivétel osztályunk
-* Saját `AdviceTrait` implementálása, mely saját `Problem` példányt hoz létre saját kivétel osztályunk esetén
-
-```java
-public class EmployeeNotFoundException extends AbstractThrowableProblem {
-
-    private static final URI TYPE
-            = URI.create("employees/employee-not-found");
-
-    public EmployeeNotFoundException(Long id) {
-        super(
-                TYPE,
-                "Not found",
-                Status.NOT_FOUND,
-                String.format("Employee with id '%d' not found", id));
-    }
-}
-```
-
----
-
-## Problem könyvtártól független <br /> kivétel
+## `ExceptionHandler` használatával
 
 ```java
 @ControllerAdvice
-public class EmployeesExceptionHandler implements ProblemHandling {
+public class EmployeesExceptionHandler {
 
-    @ExceptionHandler
-    ResponseEntity<Problem> handleException(EmployeeNotFoundException exception,
-            NativeWebRequest request) {
-        Problem problem =
-            Problem.builder()
-                .withType(URI.create("employees/employee-not-found"))
-                .withTitle("Not found")
-                .withStatus(Status.NOT_FOUND)
-                .withDetail(exception.getMessage())
-                .build();
-        return this.create(exception, problem, request);
+    @ExceptionHandler(EmployeeNotFoundException.class)
+    public ProblemDetail handleNotFoundException(EmployeeNotFoundException nfe) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,
+                String.format(nfe.getMessage()));
+        problemDetail.setType(URI.create("employees/employee-not-found"));
+        problemDetail.setTitle("Not found");
+        problemDetail.setProperty("id", UUID.randomUUID().toString());
+        return problemDetail;
     }
+
 }
 ```
 
@@ -1785,7 +1757,7 @@ class: inverse, center, middle
 
 ---
 
-## springdoc-openapi projekt
+## Spring integráció
 
 * Swagger UI automatikus elindítása a `/swagger-ui.html` címen
 * OpenAPI elérhetőség a `/v3/api-docs` címen (vagy `/v3/api-docs.yaml`)
@@ -1793,8 +1765,8 @@ class: inverse, center, middle
 ```xml
 <dependency>
   <groupId>org.springdoc</groupId>
-  <artifactId>springdoc-openapi-ui</artifactId>
-  <version>${springdoc-openapi-ui.version}</version>
+  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+  <version>2.1.0</version>
 </dependency>
 ```
 
@@ -2108,10 +2080,11 @@ class: inverse, center, middle
 
 * Bean Validation 2.0 (JSR 380) támogatás
 * Ne réteghez legyen kötve, hanem az adatot hordozó beanhez
-* Attribútumokra annotáció
+* Osztályra vagy attribútumokra tehető annotációk
+* Megadható metódus paraméterekre és visszatérési értékre is
 * Beépített annotációk
 * Saját annotáció implementálható
-* Megadható metódus paraméterekre és visszatérési értékre is
+* Nyelvesített hibaüzenetek
 
 ```xml
 <dependency>
@@ -2180,28 +2153,27 @@ public EmployeeDto createEmployee(
 
 ---
 
-## problem használatával
+class: inverse, center, middle
+
+# Validáció Problem Details használatával
+
+---
+
+## Beépített Spring támogatás személyre szabásával
 
 .small-code-14[
 ```java
-@ExceptionHandler({MethodArgumentNotValidException.class})
-public ResponseEntity<Problem> handleValidationError(MethodArgumentNotValidException e) {
-    List<Violation> violations = e.getBindingResult().getFieldErrors().stream()
+@ExceptionHandler
+public ProblemDetail handle(MethodArgumentNotValidException exception) {
+    ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    problemDetail.setType(URI.create("employees/validation-error"));
+    problemDetail.setTitle("Validation error");
+    List<Violation> violations = exception.getBindingResult().getFieldErrors().stream()
             .map((FieldError fe) -> new Violation(fe.getField(), fe.getDefaultMessage()))
-            .collect(Collectors.toList());
-
-    Problem problem = Problem.builder()
-            .withType(URI.create("employees/validation-error"))
-            .withTitle("Validation error")
-            .withStatus(Status.BAD_REQUEST)
-            .withDetail(e.getMessage())
-            .with("violations", violations)
-            .build();
-
-    return ResponseEntity
-      .status(HttpStatus.BAD_REQUEST)
-      .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-      .body(problem);
+            .toList();
+    problemDetail.setProperty("violations", violations);
+    problemDetail.setType(URI.create("employees/employee-not-found"));
+    return problemDetail;
 }
 ```
 ]
@@ -2237,24 +2209,6 @@ public class Violation {
       "message": "Name can not be null"
     }
   ]
-}
-```
-
----
-
-## problem-spring-web-starter
-
-```json
-{
-  "type": "https://zalando.github.io/problem/constraint-violation",
-  "status": 400,
-  "violations": [
-    {
-      "field": "name",
-      "message": "Name can not be null"
-    }
-  ],
-  "title": "Constraint Violation"
 }
 ```
 
@@ -3354,1524 +3308,3 @@ create table employees (id bigint not null auto_increment, emp_name varchar(255)
 create table employees (id int8 generated by default as identity, emp_name varchar(255), 
   primary key (id));
 ```
-
----
-
-class: inverse, center, middle
-
-# MongoDB
-
----
-
-## MongoDB elindítása
-
-```shell
-docker run -d -p27017:27017 --name employees-mongo mongo
-```
----
-
-## Alkalmazás előkészítése
-
-`application.properties` fájlban:
-
-```properties
-spring.data.mongodb.database = employees
-```
-
-`pom.xml` függőség
-
-```xml
-<dependency>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-starter-data-mongodb</artifactId>
-</dependency>
-```
-
----
-
-## Entitás
-
-```java
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-* @Document("employees")
-public class Employee {
-
-*    @Id
-    private String id;
-
-    private String name;
-
-    public Employee(String name) {
-        this.name = name;
-    }
-}
-```
-
----
-
-## Repository
-
-```java
-public interface EmployeesRepository extends MongoRepository<Employee, String> {
-
-    @Query("{ 'name': { $regex: ?0, $options: 'i'} }")
-    List<Employee> findAll(String name);
-
-}
-```
-
----
-
-## További módosítások
-
-* `id` átírása `String` típusra: Dto, Controller metódus paraméterek, Service metódus paraméterek
-* `EmployeesService`
-
-```java
-public EmployeeDto updateEmployee(String id, UpdateEmployeeCommand command) {
-  Employee employee = employeesRepository.findById(id)
-  .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
-  employee.setName(command.getName());
-*	employeesRepository.save(employee);
-  return modelMapper.map(employee, EmployeeDto.class);
-}
-```
-
----
-
-## Konzol
-
-```shell
-docker exec -it employees-mongo mongosh employees
-```
-
-```javascript
-db.employees.find()
-
-db.employees.insertOne({"name": "John Doe"})
-
-db.employees.findOne({'_id': ObjectId('60780cf974bc5648cf220a96')})
-
-db.employees.deleteOne({'_id': ObjectId('60780cf974bc5648cf220a96')})
-```
-
----
-
-class: inverse, center, middle
-
-# OAuth 2.0 Keycloak szerverrel
-
----
-
-## 12Factor hivatkozás: <br /> Authentication and Authorization
-
-* Security-vel az elejétől foglalkozni kell
-* Endpoint védelem
-* Audit naplózás
-* RBAC - role based access controll
-* OAuth2
-
----
-
-## OAuth 2.0
-
-* Nyílt szabány erőforrás-hozzáférés kezelésére
-* Elválik, hogy a felhasználó mit is akar igénybe venni, <br /> és az, hogy hol jelentkezik be
-* Google, Facebook vagy saját szerver
-* Szereplők
-  * Resource owner: aki hozzáfér az erőforráshoz, a szolgáltatáshoz, <br /> humán esetben a felhasználó (de lehet alkalmazás is)
-  * Client: a szoftver, ami hozzá akar férni a <br /> felhasználó adataihoz
-  * Authorization Server: ahol a felhasználó adatai <br /> tárolva vannak, és ahol be tud lépni
-  * Resource Server: ahol a felhasználó igénybe veszi <br /> az erőforrásokat, a szolgáltatást
-
----
-
-## OAuth 2.0 forgatókönyvek
-
-* Grant Type:
-  * Authorization Code: klasszikus mód, ahogy egy webes alkalmazásba <br /> lépünk Facebook vagy a Google segítségével
-  * Implicit: mobil alkalmazások, vagy csak böngészőben futó alkalmazások <br /> használják
-  * Resource Owner Password Credentials: ezt olyan megbízható <br /> alkalmazások használják, melyek maguk kérik be a jelszót
-  * Client Credentials: ebben az esetben <br /> nem a felhasználó kerül azonosításra, <br /> hanem az alkalmazás önmaga
-
----
-
-## Authorization Code
-
-* A felhasználó elmegy az alkalmazás oldalára
-* Az átirányít a Authorization Serverre (pl. Google vagy Facebook), <br /> megadva a saját azonosítóját (client id), hogy hozzá szeretne férni <br /> a felhasználó adataihoz
-* Az Authorization Serveren a felhasználó bejelentkezik
-* Az Authorization Serveren a felhasználó jogosultságot ad az alkalmazásnak, <br /> hogy hozzáférjen a felhasználó adataihoz
-* Az Authorization Server visszairányítja a felhasználót <br /> az alkalmazás oldalára, url paraméterként átadva neki <br /> egy úgynevezett authorization code-ot
-* Az alkalmazás a kapott authorization code-ot, <br /> a saját azonosítóját (client id), az alkalmazáshoz <br /> rendelt "jelszót" (client secret) felhasználva lekéri <br />
-az Authorization Servertől a felhasználóhoz tartozó <br /> tokent, mely tartalmazza a felhasználó adatait
-
----
-
-## Token
-
-<img src="images/jwasterix.png" alt="JW* szabványok" width="600"/>
-
----
-
-## Keycloak
-
-* Keycloak indítása Dockerben
-
-```shell
-docker run -e KEYCLOAK_USER=root -e KEYCLOAK_PASSWORD=root -p 8081:8080
-  --name keycloak jboss/keycloak
-```
-
-* Létre kell hozni egy Realm-et (`EmployeesRealm`)
-* Létre kell hozni egy klienst, amihez meg kell adni annak azonosítóját, <br /> és hogy milyen url-en érhető el (`employees-app`)
-* Létre kell hozni a szerepköröket (`employees_app_user`)
-* Létre kell hozni egy felhasználót (a _Email Verified_ legyen _On_ értéken, hogy be lehessen vele jelentkezni), beállítani a jelszavát (a _Temporary_ értéke legyen _Off_, hogy ne kelljen jelszót módosítani), <br /> valamint hozzáadni a szerepkört (`johndoe`)
-
----
-
-## Keycloak tesztelés
-
-* Konfiguráció leírása:
-
-.small-code-14[
-```
-http://localhost:8081/auth/realms/EmployeesRealm/.well-known/openid-configuration
-```
-]
-
-* A következő címen lekérhető a tanúsítvány
-
-.small-code-14[
-```
-http://localhost:8081/auth/realms/EmployeesRealm/protocol/openid-connect/certs
-```
-]
-
----
-
-## Token lekérése
-
-.small-code-14[
-```shell
-curl -s --data "grant_type=password&client_id=employees-app&username=johndoe&password=johndoe"
-  http://localhost:8081/auth/realms/EmployeesRealm/protocol/openid-connect/token | jq
-```
-]
-
-.small-code-14[
-```http
-POST http://localhost:8081/auth/realms/EmployeesRealm/protocol/openid-connect/token
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=password&client_id=employees-app&username=johndoe&password=johndoe
-```
-]
-
-* A https://jws.io címen ellenőrizhető
-
----
-
-## Keycloak tesztelés Postmanből
-
-Be kell írni egy létező scope-ot (pl. `profile`), mert üreset nem tud értelmezni
-
-<img src="images/keycloak-postman.png" alt="Keycloak tesztelés Postmanből" width="300" />
-
----
-
-## Spring támogatás
-
-* Spring Security OAuth deprecated
-* Spring Security 5.2 majdnem teljes támogatás
-    * Authorization Server nélkül
-* Külön Keycloak integráció
-
-.small-code-14[
-```xml
-<dependencyManagement>
-  <dependencies>
-    <dependency>
-      <groupId>org.keycloak.bom</groupId>
-      <artifactId>keycloak-adapter-bom</artifactId>
-      <version>14.0.0</version>
-      <type>pom</type>
-      <scope>import</scope>
-    </dependency>
-  </dependencies>
-</dependencyManagement>
-```
-]
-
-.small-code-14[
-```xml
-<dependency>
-  <groupId>org.keycloak</groupId>
-  <artifactId>keycloak-spring-boot-starter</artifactId>
-</dependency>
-```
-]
-
----
-
-## Konfiguráció
-
-* `application.properties`:
-
-.small-code-14[
-```properties
-keycloak.auth-server-url=http://localhost:8081/auth
-keycloak.realm=EmployeesRealm
-keycloak.resource=employees-app
-keycloak.bearer-only=true
-
-keycloak.security-constraints[0].authRoles[0]=employees_app_user
-keycloak.security-constraints[0].securityCollections[0].patterns[0]=/*
-
-keycloak.principal-attribute=preferred_username
-
-```
-]
-
----
-
-## Kérés
-
-```http
-GET http://localhost:8080/api/employees
-Accept: application/json
-Authorization: bearer eyJ...
-```
-
----
-
-## Felhasználónévhez hozzáférés
-
-```java
-@GetMapping
-public List<EmployeeDto> employees(Principal principal) {
-    log.info("Logged in user: {}", principal.getName());
-    return employeeService.listEmployees();
-}
-```
-
----
-
-class: inverse, center, middle
-
-# RestTemplate
-
----
-
-## Architektúra
-
-![RestTemplate architektúra](images/resttemplate.png)
-
----
-
-## Lépések
-
-* Addresses alkalmazás elindítása Docker Hub alapján
-
-```shell
-docker run -d -p 8081:8080 --name my-addresses training360/addresses
-```
-
-* Addresses alkalmazás elindítása forrás alapján
-
-```shell
-mvnw package
-docker build -t addresses .
-docker run -d -p 8081:8080 --name my-addresses addresses
-```
-
----
-
-## Forrás
-
-```java
-@Service
-@Slf4j
-public class AddressesGateway {
-
-    private final RestTemplate restTemplate;
-
-    private String url;
-
-    public AddressesGateway(RestTemplateBuilder builder, 
-            @Value("${employees.addresses.url}") String url) {
-        restTemplate = builder.build();
-        this.url = url;
-    }
-
-    public AddressDto findAddressByName(String name) {
-        log.debug("Get address from Addresses application");
-        return restTemplate.getForObject(url, AddressDto.class, name);
-    }
-}
-```
-
----
-
-## application.properties
-
-```properties
-employees.addresses.url = http://localhost:8081/api/addresses?name={name}
-```
-
----
-
-class: inverse, center, middle
-
-# WebClient
-
----
-
-## Integráció WebClienttel függőség
-
-```xml
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-webflux</artifactId>
-</dependency>
-```
-
----
-
-## Integráció WebClienttel
-
-```java
-@Service
-public class AddressesGateway {
-
-    public AddressDto findAddressByName(String name) {
-        return WebClient.create("http://localhost:8081")
-                .get()
-                .uri(builder -> builder.path("/api/addresses").queryParam("name", name).build())
-                .retrieve()
-                .bodyToMono(AddressDto.class)
-                .block();
-    }
-}
-```
-
----
-
-## Nagyvállalati megoldás
-
-* Konfiguráció `@ConfigurationProperties` használatával
-* Saját annotáció
-* Hibakezelés
-* Thread-ek száma
-* Timeout
-
-.small-code-14[
-```java
-String connectionProviderName = "myConnectionProvider";
-HttpClient httpClient = HttpClient.create(ConnectionProvider.create(connectionProviderName, 5));
-
-WebClient webClient = WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient))
-        .baseUrl(gatewayProperties.getUrl())
-        .build();
-
-return webClient
-        .get()
-        .uri(builder -> builder.path("/api/addresses").queryParam("name", name).build())
-        .retrieve()
-        .bodyToMono(AddressDto.class)
-        .timeout(Duration.parse("PT5S"))
-        .onErrorReturn(new AddressDto())
-        .block();
-```
-]
-
----
-
-class: inverse, center, middle
-
-# RestTemplate integrációs tesztelése
-
----
-
-## RestClientTest
-
-.small-code-14[
-```java
-@RestClientTest(value = AddressesGateway.class, 
-  properties = "employees.addresses.url = http://localhost:8080/api/addresses?name={name}")
-public class AddressesGatewayRestTemplateIT {
-
-    @Autowired
-    AddressesGateway addressesGateway;
-
-    @Autowired
-    MockRestServiceServer server;
-
-    @Test
-    void testFindAddressByName() throws JsonProcessingException {
-        server.expect(requestTo(startsWith("http://localhost:8080/api/addresses")))
-                .andExpect(queryParam("name", "John%20Doe"))
-                .andRespond(withSuccess("{\"city\": \"Budapest\", \"address\": \"Andrássy u. 2.\"}"
-                  , MediaType.APPLICATION_JSON));
-
-        AddressDto addressDto = addressesGateway.findAddressByName("John Doe");
-
-        assertEquals("Budapest", addressDto.getCity());
-        assertEquals("Andrássy u. 2.", addressDto.getAddress());
-    }
-}
-```
-]
-
----
-
-## ObjectMapper
-
-```java
-public class AddressesGatewayRestTemplateIT {
-
-    // ...
-
-    @Autowired
-    ObjectMapper objectMapper;
-
-    @Test
-    void testFindAddressByName() throws JsonProcessingException {
-        String json = objectMapper.writeValueAsString(new AddressDto("Budapest", "Andrássy u. 2."));
-
-        // ...
-    }
-}
-```
-
----
-
-class: inverse, center, middle
-
-# WireMock
-
----
-
-## WireMock
-
-* Eszköz HTTP-alapú, pl. REST API mockolásra
-* Kapcsolódó rendszer helyettesítésére
-* Megadható, hogy milyen URL-en milyen választ adjon vissza <br /> (request matching, stubbing)
-* Ellenőrizni lehet, hogy milyen kérések mentek felé (verification)
-* Szimulálható hibás működés (pl. státuszkódok, timeoutok)
-* Futtatható önállóan, vagy JUnit tesztbe ágyazva
-* Képes felvenni és visszajátszani kommunikációt
-* REST és Java API
-* Konfigurálható akár JSON állományokkal is
-* Spring Boot integráció: [Spring Cloud Contract WireMock](https://docs.spring.io/spring-cloud-contract/docs/current/reference/html/project-features.html#features-wiremock)
-
----
-
-## Függőség
-
-```xml
-<dependency>
-    <groupId>org.springframework.cloud</groupId>
-    <artifactId>spring-cloud-starter-contract-stub-runner</artifactId>
-    <version>3.1.3</version>
-    <scope>test</scope>
-</dependency>
-```
-
----
-
-## Teszteset
-
-.small-code-14[
-```java
-@SpringBootTest
-@AutoConfigureWireMock(port = 8081)
-class AddressesGatewayWireMockIT {
-
-    @Autowired
-    AddressesGateway addressesGateway;
-
-    @Test
-    void testFindAddressByName() {
-      String resource = "/api/addresses";
-
-      stubFor(get(urlPathEqualTo("/api/addresses"))
-        .willReturn(aResponse()
-        .withHeader("Content-Type", "application/json")
-        .withBody("{\"city\": \"Budapest\", \"address\": \"Andrássy u. 2.\"}")));
-
-      Address address = gateway.findAddressByName("John Doe");
-
-      verify(getRequestedFor(urlPathEqualTo(resource))
-        .withQueryParam("name", equalTo("John Doe")));
-        
-      assertThat(address.getCity()).isEqualTo("Budapest");
-      assertThat(address.getAddress()).isEqualTo("Andrássy u. 2.");
-    }
-
-}
-```
-]
-
----
-
-class: inverse, center, middle
-
-# JMS infrastruktúra
-
----
-
-## Message Oriented Middleware
-
-* Rendszerek közötti üzenetküldés
-* Megbízható üzenetküldés: store and forward
-* Következő esetekben alkalmazható hatékonyan
-  * Hívott fél megbízhatatlan
-  * Kommunikációs csatorna megbízhatatlan
-  * Hívott fél lassan válaszol
-  * Terheléselosztás
-  * Heterogén rendszerek
-* Lazán kapcsolt rendszerek: nem kell ismerni a <br /> címzettet
-
----
-
-## JMS
-
-* Szabványos Java API MOM-ekhez való hozzáféréshez
-* Java EE része, de Java SE-ben is használható
-* JMS provider
-  * IBM MQ, Apache ActiveMQ (ActiveMQ 5 "Classic", ActiveMQ Artemis), <br /> RabbitMQ
-* Hozzáférés JMS API-n keresztül
-
----
-
-## Architektúra
-
-<img src="images/artemismq.png" alt="JMS architektúra" width="500">
-
----
-
-## Lépések
-
-* Hálózat létrehozása
-
-```script
-docker network create --driver bridge eventstore-net
-```
-
-* Artemis indítása
-
-```script
-docker build -t eventstore-mq .
-docker run -d -p 8161:8161 -p 61616:61616
-  --network eventstore-net --name employees-mq eventstore-mq
-```
-
-* EventStore indítása
-
-```script
-mvnw package
-docker build -t eventstore .
-docker run -d -p 8082:8080
-  -e SPRING_ARTEMIS_HOST=eventstore-mq
-  --network eventstore-net --name eventstore eventstore
-```
-
----
-
-## Artemis konfig
-
-.small-code-14[
-```dockerfile
-FROM adoptopenjdk:14-jdk-hotspot
-
-RUN apt-get update \
-  && apt-get install wget \
-  && wget -q -O /tmp/apache-artemis-2.13.0-bin.tar.gz \
-  "https://www.apache.org/dyn/closer.cgi?filename=activemq/activemq-artemis/2.13.0/apache-artemis-2.13.0-bin.tar.gz&action=download" \
-  && tar xzf /tmp/apache-artemis-2.13.0-bin.tar.gz -C /opt \
-  && rm /tmp/apache-artemis-2.13.0-bin.tar.gz
-
-WORKDIR /var/lib
-RUN /opt/apache-artemis-2.13.0/bin/artemis create --http-host 0.0.0.0 --relax-jolokia \
-  --queues eventsQueue --allow-anonymous --user artemis --password artemis eventstorebroker
-
-RUN sed -i "s|<max-disk-usage>90</max-disk-usage>|<max-disk-usage>100</max-disk-usage>|g"
-  \ /var/lib/eventstorebroker/etc/broker.xml
-
-EXPOSE 8161
-EXPOSE 61616
-
-CMD ["/var/lib/eventstorebroker/bin/artemis", "run"]
-```
-]
-
-* `--relax-jolokia` admin felület elérhető legyen kintről
-* `max-disk-usage`, különben blokkolja a küldést
-
-
----
-
-## Lépések meglévő image-k alapján
-
-* Hálózat létrehozása
-
-```script
-docker network create --driver bridge eventstore-net
-```
-
-* Artemis indítása
-
-```script
-docker run -d -p 8161:8161 -p 61616:61616 
-  --network eventstore-net --name eventstore-mq training360/eventstore-mq
-```
-
-* EventStore indítása
-
-```script
-docker run -d -p 8082:8080
-  -e SPRING_ARTEMIS_HOST=eventstore-mq
-  --network eventstore-net
-  --name my-eventstore training360/eventstore
-```
-
----
-
-## docker-compose.yaml
-
-```yaml
-version: '3'
-
-services:
-  eventstore-mq:
-    image: training360/eventstore-mq
-    restart: always
-    ports:
-      - "8161:8161"
-      - "61616:61616"
-  eventstore:
-    image: training360/eventstore
-    restart: always
-    depends_on:
-      - eventstore-mq
-    ports:
-      - "8082:8080"
-    environment:
-      SPRING_ARTEMIS_HOST: 'eventstore-mq'
-    entrypoint: ["./wait-for-it.sh", "-t", "120", "eventstore-mq:61616", "--", 
-               "java", "org.springframework.boot.loader.JarLauncher"]
-```
-
----
-
-## Docker compose értelmezés
-
-* `depends_on`: indítási sorrend
-* `restart: always`: hiba esetén vagy Docker daemon újraindításkor is újraindítja (pl. számítógép reboot esetén is)
-
----
-
-## wait-for-it beszerzése
-
-```dockerfile
-RUN  apt-get update \
-     && apt-get install wget \
-     && apt-get install -y netcat \
-     && wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
-     && chmod +x ./wait-for-it.sh
-```
-
----
-
-## Indítás Docker compose-zal
-
-```shell
-docker-compose up
-
-docker-compose up -d
-
-docker-compose down
-```
-
----
-
-## Artemis admin felület
-
-* Elérhető a `http://localhost:8161` címen.
-* Alapértelmezett felhasználónév/jelszó: `admin` / `admin`
-
----
-
-class: inverse, center, middle
-
-# JMS üzenet küldése
-
----
-
-## Spring üzenetküldés konfig
-
-```xml
-<dependency>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-starter-artemis</artifactId>
-</dependency>
-```
-
-* Ekkor a localhosthoz, default porton (`61616`) kapcsolódik
-* Felülbírálható a `spring.artemis.host` és `spring.artemis.port` <br /> paraméterekkel
-
----
-
-## Üzenetküldés
-
-* Injektálható `JmsTemplate` segítségével
-
-```java
-public class EventStoreGateway {
-
-    private JmsTemplate jmsTemplate;
-
-    public EventStoreGateway(JmsTemplate jmsTemplate) {
-        this.jmsTemplate = jmsTemplate;
-    }
-
-    public void sendEvent(EmployeeHasCreatedEvent event) {
-        log.debug("Send event to eventstore");
-        jmsTemplate.convertAndSend("eventsQueue", event);
-    }
-}
-```
-
----
-
-## Konvertálás
-
-* Alapesetben a `SimpleMessageConverter` aktív
-    * `String` -> `TextMessage`
-    * `byte[]` -> `BytesMessage`
-    * `Map` -> `MapMessage`
-    * `Serializable` -> `ObjectMessage`
-
----
-
-## Konvertálás JSON-be
-
-* `MarshallingMessageConverter` (JAXB), vagy `MappingJackson2MessageConverter` (JSON)
-
-
-```java
-@Bean
-public MessageConverter messageConverter(ObjectMapper objectMapper){
-  MappingJackson2MessageConverter converter =
-  new MappingJackson2MessageConverter();
-  converter.setTypeIdPropertyName("_typeId");
-  return converter;
-}
-```
-
-* A cél a `_typeId` értékéből (header-ben utazik) találja ki, <br /> hogy milyen osztállyá kell alakítani (unmarshal)
-
----
-
-## Típus megadása
-
-* Alapesetben a típus értéke fully qualified classname - lehet, hogy a cél oldalon nem mond semmit
-* Ezért hozzárendelünk egy stringet
-
-```java
-MappingJackson2MessageConverter converter
-  = new MappingJackson2MessageConverter();
-converter.setTypeIdPropertyName("_typeId");
-converter.setTypeIdMappings(
-  Map.of("CreateEventCommand", EmployeeHasCreatedEvent.class));
-```
-
----
-
-class: inverse, center, middle
-
-# JMS üzenet fogadása
-
----
-
-## JMS üzenet fogadása
-
-```java
-@JmsListener(destination = "eventsQueue")
-public void processMessage(CreateEventCommand command) {
-    eventsService.createEvent(command, "JMS");
-}
-```
-
----
-
-class: inverse, center, middle
-
-# Actuator
-
----
-
-## Actuator
-
-* Monitorozás, beavatkozás és metrikák
-* HTTP és JMX végpontok
-
----
-
-## Actuator alapok
-
-```xml
-<dependency>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-starter-actuator</artifactId>
-</dependency>
-```
-
-* `http://localhost:8080/actuator` címen elérhető az <br /> enabled és exposed endpontok listája
-* Logban:
-
-```plaintext
-o.s.b.a.e.web.EndpointLinksResolver:
-  Exposing 2 endpoint(s) beneath base path '/actuator'
-```
-
-* További actuator végpontok bekapcsolása: <br /> `management.endpoints.web.exposure.include` <br />konfigurációval
-
----
-
-## Actuator haladó
-
-* Összes expose: `management.endpoints.web.exposure.include = *`
-* Mind be van kapcsolva, kivéve a shutdown
-
-```properties
-management.endpoint.shutdown.enabled = true
-```
-
-* Saját fejleszthető
-* Biztonságossá kell tenni
-
----
-
-## Health
-
-```json
-{"status":"UP"}
-```
-
-```properties
-management.endpoint.health.show-details = always
-```
-
-* Létező JDBC DataSource, MongoDB, JMS providers, stb.
-* Saját fejleszthető (`implements HealthIndicator`)
-
----
-
-## Health details
-
-.small-code-14[
-```json
-{
-  "status": "UP",
-  "components": {
-    "db": {
-      "status": "UP",
-      "details": {
-        "database": "H2",
-        "result": 1,
-        "validationQuery": "SELECT 1"
-      }
-    },
-    "diskSpace": {
-      "status": "UP",
-      "details": {
-        "total": 1000202039296,
-        "free": 680306184192,
-        "threshold": 10485760
-      }
-    },
-    "ping": {
-      "status": "UP"
-    }
-  }
-}
-```
-]
-
----
-
-## JVM belső működés
-
-* Heap dump: `/heapdump` (bináris állomány)
-* Thread dump: `/threaddump`
-
----
-
-## Spring belső működés
-
-* Beans: `/beans`
-* Conditions: `/conditions`
-    * Autoconfiguration feltételek teljesültek-e vagy sem - ettől függ, <br /> milyen beanek kerültek létrehozásra
-* HTTP mappings: `/mappings`
-    * HTTP mappings és a hozzá tartozó kiszolgáló metódusok
-* Configuration properties: `/configprops`
-
----
-
-## Trace
-
-* Ha van `HttpTraceRepository` az application contextben
-* Fejlesztői környezetben: `InMemoryHttpTraceRepository`
-* Éles környezetben: Zipkin vagy Spring Cloud Sleuth
-* Megjelenik a `/httptrace` endpoint
-
----
-
-## Kapcsolódó szolgáltatások <br /> és library-k
-
-* `/caches` - Cache
-* `/scheduledtasks` - Ütemezett feladatok
-* `/flyway` - Flyway
-* `/liquibase` - Liquibase
-* `/integrationgraph` - Spring Integration
-* `/sessions` - Spring Session
-* `/jolokia` - Jolokia (JMX http-n keresztül)
-* `/prometheus`
-
----
-
-## Info
-
-* `info` prefixszel megadott property-k belekerülnek
-
-```properties
-# Spring Boot 2.6 óta
-management.info.env.enabled=true
-
-info.appname = employees
-```
-
-```json
-{"appname":"employees"}
-```
-
----
-
-## Property
-
-* `/env` végpont - property source-ok alapján felsorolva
-* `/env/info.appname` - értéke, látszik, hogy melyik property source-ból jött
-* Spring Cloud Config esetén `POST`-ra módosítani is lehet <br /> (Spring Cloud Config Server használja)
-
----
-
-## JMX
-
-* `spring.jmx.enabled` hatására management endpointok exportálása MBean-ként
-* Kapcsolódás pl. JConsole-lal
-* JMX over HTTP beállítása Jolokiával
-
-```xml
-<dependency>
-    <groupId>org.jolokia</groupId>
-    <artifactId>jolokia-core</artifactId>
-</dependency>
-```
-
-* JavaScript, Java API
-* Kliens pl. a [Jmx4Perl](https://metacpan.org/pod/jmx4perl)
-* Jmx4Perl Docker konténerben
-
-```shell
-docker run --rm -it jolokia/jmx4perl jmx4perl
-  http://host.docker.internal:8080/actuator/jolokia
-  read java.lang:type=Memory HeapMemoryUsage
-```
-
----
-
-## 12Factor: Admin processes
-
-* Felügyeleti, üzemeltetési folyamatok
-* Ne ad-hoc szkriptek
-* Alkalmazással együtt kerüljenek verziókezelésre, buildelésre és kiadásra
-* Preferálja a REPL (read–eval–print loop) használatát
-    * Tipikusan command line
-* Megosztó, könnyen el lehet rontani
-
----
-
-## 12Factor: Admin processes
-
-* Tipikusan máshogy kéne megoldani:
-    * Adatbázis migráció
-    * Ütemezett folyamatok
-    * Egyszer lefutó kódok
-    * Command line-ban elvégezhető feladatok
-* Megoldások:
-    * Flyway, Liquibase
-    * Magas szintű ütemező (pl. Quartz)
-    * REST-en, MQ-n meghívható kódrészek
-    * Új microservice
-
----
-
-class: inverse, center, middle
-
-# Build és Git információk megjelenítése
-
----
-
-## Build információk megjelenítése
-
-.small-code-14[
-```xml
-<plugin>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-maven-plugin</artifactId>
-    <executions>
-        <execution>
-            <goals>
-                <goal>build-info</goal>
-            </goals>
-        </execution>
-    </executions>
-</plugin>
-```
-]
-
-A `target/classes/META-INF` könyvtárban `build-info.properties` fájl 
-
-.small-code-14[
-```json
-{
-    "build": {
-        "artifact": "employees",
-        "name": "employees",
-        "time": "2022-10-05T20:50:03.216Z",
-        "version": "0.0.1-SNAPSHOT",
-        "group": "training"
-    }
-}
-```
-]
-
----
-
-## Git információk megjelenítése
-
-```xml
-<plugin>
-  <groupId>pl.project13.maven</groupId>
-  <artifactId>git-commit-id-plugin</artifactId>
-</plugin>
-```
-
-A `target/classes` könyvtárban `git.properties` fájl
-
-```json
-{
-  "appname": "employees",
-  "git": {
-    "branch": "master",
-    "commit": {
-      "id": "d63acd0",
-      "time": "2020-02-04T11:12:58Z"
-    }
-  }
-}
-```
-
----
-
-## 12Factor: One Codebase, <br /> One Application
-
-* A különböző környezetekre telepített példányoknál alapvető igény, <br />
-  hogy tudjuk, hogy mely verzióból készült (felületen, logban látható legyen)
-
----
-
-class: inverse, center, middle
-
-# Naplózás
-
----
-
-## Naplózás lekérdezése és beállítása
-
-* `/loggers`
-* `/logfile`
-
-```plaintext
-### Get logger
-GET http://localhost:8080/actuator/loggers/training.employees
-
-### Set logger
-POST http://localhost:8080/actuator/loggers/training.employees
-Content-Type: application/json
-
-{
-  "configuredLevel": "INFO"
-}
-```
-
----
-
-class: inverse, center, middle
-
-# Metrics
-
----
-
-## Metrics
-
-* `/metrics` végponton
-* [Micrometer](https://micrometer.io/) - application metrics facade (mint az SLF4J a naplózáshoz)
-* Több, mint 15 monitoring eszközhöz való csatlakozás <br /> (Elastic, Ganglia, Graphite, New Relic, Prometheus, stb.)
-
----
-
-## Gyűjtött értékek
-
-* JVM
-    * Memória
-    * GC
-    * Szálak
-    * Betöltött osztályok
-* CPU
-* File descriptors
-* Uptime
-* Tomcat (`server.tomcat.mbeanregistry.enabled` <br /> értéke legyen `true`)
-* Library-k: Spring MVC, WebFlux, Jersey, HTTP Client, <br /> Cache, DataSource, Hibernate, RabbitMQ
-* Stb.
-
----
-
-## Saját metrics
-
-```java
-Counter.builder(EMPLOYEES_CREATED_COUNTER_NAME)
-        .baseUnit("employees")
-        .description("Number of created employees")
-        .register(meterRegistry);
-
-meterRegistry.counter(EMPLOYEES_CREATED_COUNTER_NAME).increment();
-```
-
-A `/metrics/employees.created` címen elérhető
-
----
-
-## 12Factor hivatkozás: Telemetry
-
-* Adatok különböző kategóriákba sorolhatóak:
-  * Application performance monitoring
-  * Domain specifikus értékek
-  * Health, logs
-* Új konténerek születnek és szűnnek meg
-* Központi eszköz
-
----
-
-class: inverse, center, middle
-
-# Metrics Graphite monitoring eszközzel
-
----
-
-## Graphite architektúra
-
-* Az alkalmazás tölti fel bizonyos időközönként az adatokat
-
----
-
-## Graphite indítás
-
-```shell
-docker run
-  -d  
-  -p 80:80 -p 2003-2004:2003-2004 -p 2023-2024:2023-2024
-  -p 8125:8125/udp -p 8126:8126
-  --name graphite
-  graphiteapp/graphite-statsd
-```
-
-Felhasználó/jelszó: `root`/`root`
-
----
-
-## Graphite integráció
-
-```xml
-<dependency>
-  <groupId>io.micrometer</groupId>
-  <artifactId>micrometer-registry-graphite</artifactId>
-</dependency>
-```
-
-```properties
-management.metrics.export.graphite.step = 10s
-```
-
----
-
-class: inverse, center, middle
-
-# Metrics Prometheus monitoring eszközzel
-
----
-
-## Spring Boot alkalmazás <br /> konfigurálása
-
-* `io.micrometer:micrometer-registry-prometheus` függőség
-* `/actuator/prometheus` endpoint
-
-```xml
-<dependency>
-  <groupId>io.micrometer</groupId>
-  <artifactId>micrometer-registry-prometheus</artifactId>
-</dependency>
-```
----
-
-## Prometheus architektúra
-
-* Prometheus kérdez le a megadott rendszerességgel
-* yml konfiguráció, `prometheus.yml`
-
-```yaml
-scrape_configs:
-  - job_name: employees
-    metrics_path: '/actuator/prometheus'
-    scrape_interval: 20s
-    static_configs:
-      - targets: ['host.docker.internal:8080']
-```
-
----
-
-## Prometheus indítása
-
-Tegyük fel, hogy a `prometheus.yml` a `D:\data\prometheus` könyvtárban van
-
-```shell
-docker run -d -p 9090:9090 -v D:\data\prometheus:/etc/prometheus
-  --name prom prom/prometheus
-```
-
----
-
-class: inverse, center, middle
-
-# Audit events
-
----
-
-## Audit events
-
-* Pl. bejelentkezéssel kapcsolatos események
-* Saját események vehetőek fel
-* Kell egy `AuditEventRepository` implementáció, <br />beépített: `InMemoryAuditEventRepository`
-* Megjelenik az `/auditevents` endpoint
-
-```java
-applicationEventPublisher.publishEvent(
-  new AuditApplicationEvent("anonymous",
-    "employee_has_been_created",
-      Map.of("name", command.getName())));
-```
-
----
-
-class: inverse, center, middle
-
-# Continuous Delivery Jenkins Pipeline-nal
-
----
-
-## Continuous Integration
-
-*	Extreme Programming
-*	Termék átadásának gyorsítására, integrációs idő csökkentésére
-*	Revision control, branching csökkentése, gyakori commit, commit-onként build
-*	Build folyamat automatizálása, idejének csökkentése
-*	Tesztelés automatizálása, az éles (production) környezethez hasonló környezetben
-*	A build eredménye mindenki számára hozzáférhető – „eltört build” fogalma
-*	A build eredményének azonnali publikálása: hibák mielőbbi megtalálása
-
----
-
-## Continuous Integration előnyei
-
-*	Integrációs problémák mielőbbi feltárása és javítása
-*	Hibás teszt esetén könnyű visszaállás
-*	Nem forduló kód mielőbbi feltárása és javítása
-*	Konfliktusok mielőbbi feltárása és javítása
-*	Minden módosítás azonnali unit tesztelése
-*	Verziók azonnali elérhetősége
-*	Fejlesztőknek szóló rövidebb visszajelzés
-
----
-
-## Continuous Delivery
-
-Olyan megközelítés, melynek használatával a fejlesztés rövid ciklusokban történik, biztosítva
-hogy a szoftver bármelyik pillanatban kiadható
-
-* Minden egyes változás (commit) potenciális release
-* Build automatikus és megismételhető formában
-* Több lépésből áll: fordítás, csomagolás, tesztelés (statikus és dinamikus), <br /> telepítés különböző környezetekre
-* Deployment pipeline foglalja magába a lépéseket
-* Ugyanaz az artifact megy végig a pipeline-on
-
----
-
-## Jenkins
-
-* Automation server
-* Open source
-* Build, deploy, automatic
-* Nagyon sok plugin
-* Jenkins nodes: master és agents
-* [Dockerben futtatható](https://github.com/jenkinsci/docker/blob/master/README.md)
-
----
-
-## Pipeline
-
-* Pluginek
-* Continuous delivery pipeline megvalósításához
-* Pipelines "as code"
-* DSL: `Jenkinsfile`
-* Stage-ek, melyek step-ekből állnak
-
----
-
-## Pull szemantika
-
-* CD túl sokmindenhez hozzáfér
-* A CD vége csak az artifact előállítás, de nem a telepítés
-* Környezet deklaratív leírás alapján előállítható/frissíthető legyen
-* Ha új környezetet kell előállítani, nem kell hozzá CD
-
----
-
-## Példa pipeline
-
-`Jenkinsfile` tartalma:
-
-.small-code-14[
-```groovy
-pipeline {
-   agent any
-
-   stages {
-      stage('package') {
-         steps {
-            git 'https://github.com/vicziain/employees'
-
-            sh "./mvnw clean package"
-         }
-      }
-      stage('test') {
-         steps {
-            sh "./mvnw verify"
-         }
-      }
-   }
-}
-```
-]
-
----
-
-## Maven Failsafe plugin
-
-```xml
-<plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-failsafe-plugin</artifactId>
-    <version>2.22.2</version>
-    <executions>
-    	<execution>
-             <goals>
-                 <goal>integration-test</goal>
-             </goals>
-    	</execution>
-    </executions>
-</plugin>
-```
-
----
-
-## Maven wrapper
-
-```shell
-git update-index --chmod=+x mvnw
-```
-
-* Letölti a Mavent
-* Maven letölti a függőségeket
-
----
-
-## Jenkins pipeline grafikusan
-
-<img src="images/jenkins-pipeline.png" alt="Jenkins pipeline" width="500">
-
----
-
-## Dockerfile
-
-```dockerfile
-FROM jenkins/jenkins:lts-jdk11
-ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
-
-RUN jenkins-plugin-cli --plugins "git workflow-aggregator pipeline-stage-view blueocean"
-```
-
----
-
-## Jenkins előkészítése
-
-```shell
-docker build --file Dockerfile.jenkins -t employees-jenkins .
-
-docker run -d -p 8082:8080 --name employees-jenkins employees-jenkins
-```
----
-
-## Job létrehozása
-
-* Új Item
-* Projektnév megadása, pl. `employees`
-* Pipeline
-* Pipeline/Definition Pipeline script from SCM
-* Git
-* Repository URL kitöltése, pl. `https://github.com/vicziain/employees`
-
----
-
-## 12Factor hivatkozás: Design, <br /> Build, Release and Run
-
-* Futtatható alkalmazás készítése
-* Forráskód + build = verziózott immutable artifact
-* Verziózott artifact + környezeti konfiguráció: egyedi azonosítóval rendelkező <br /> immutable release
-* Kezeli a függőségeket
-* Visszaállás egy előző release-re
-* Build, release, futtatás élesen elválik
-
----
-
-## 12Factor hivatkozás: <br /> Environment Parity
-
-* Ne legyen olyan, hogy "nálam működik"
-* Különbségek
-    * Időbeli eltolódás (lassú release)
-    * Személyi különbségek (fejlesztő nem lát rá az éles rendszerre), <br /> egy gombos deploy
-    * Eszközbeli különbségek <br /> (pl. pehelysúlyú, embedded megoldások, pl. H2)
-* Docker segít

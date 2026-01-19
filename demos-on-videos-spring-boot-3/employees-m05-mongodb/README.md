@@ -1,3 +1,0 @@
-# Employees
-
-Példa alkalmazás.

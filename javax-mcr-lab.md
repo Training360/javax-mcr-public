@@ -27,7 +27,7 @@ Hozz létre egy `locations-spring` projektet, benne egy `LocationsController`
 osztályt, mely visszaadja a kedvenc helyeket, egyelőre Stringként!
 
 Egy kedvenc helyet a `Location` osztály reprezentál. Rendelkezik egy azonosítóval, névvel
-és két koordinátával (rendre `Long id`, `String name`, `double lat`, `double lon`).
+és két koordinátával (rendre `Long id`, `String name`, `double latitude`, `double longitude`).
 
 Ezek egy listája legyen a controllerben. A `getLocations()` metódus ezeket adja vissza.
 Implementáld a `Location` osztály `toString()` metódusát!
@@ -37,7 +37,7 @@ Implementáld a `Location` osztály `toString()` metódusát!
 Hozz létre egy `locations` projektet! 
 
 Egy kedvenc helyet a `Location` osztály reprezentál. Rendelkezik egy azonosítóval, névvel
-és két koordinátával (rendre `Long id`, `String name`, `double lat`, `double lon`).
+és két koordinátával (rendre `Long id`, `String name`, `double latitude`, `double longitude`).
 
 A `locations` csomagba dolgozz!
 
@@ -130,17 +130,15 @@ arra szükség van!
 
 Lehessen megadni, hogy szűrni lehessen a kedvenc hely nevére!
 
-Opcionális feladat: Megadhatsz további paramétereket is, pl. `minLat`, `minLon`,
-`maxLat` és `maxLon`. Ezekkel korlátokat tudsz megadni a kedvenc hely
-koordinátáira.
-
 Lehessen lekérni kedvenc helyeket id alapján is!
 
-Id generálására használj `AtomicLong` osztályt, szűrésre Java 8 streameket! 
+Szűrésre használj Java 8 streameket! 
 
 ## REST webszolgáltatások POST és DELETE művelet
 
 ### Create
+
+Id generálására innentől használj `AtomicLong` osztályt!
 
 Írd meg, hogy lehessen felvenni új kedvenc helyet! Ehhez hozz létre
 egy `CreateLocationCommand` osztályt is!
@@ -165,6 +163,10 @@ JSON legyen az üzenet törzsében!
 
 Módosítsd, hogy nem található kedvenc hely esetén `404`-es státuszkód jöjjön vissza!
 Használj saját kivételt, pl. `LocationNotFoundException`!
+
+## Státuszkódok és hibakezelés problem-spring-web-starterrel
+
+Módosítsd úgy az alkalmazásod, hogy a hibakezelés `problem-spring-web-starter`-rel történjen!
 
 ## Integrációs tesztelés
 
@@ -195,7 +197,6 @@ státuszkódokra is!
 OpenAPI dokumentumot importáld a Postmanbe, és teszteld a 
 REST webszolgáltatásokat!
 
-
 ## Tesztelés Rest Assured használatával
 
 Írj legalább egy Controller metódusra integrációs tesztet!
@@ -224,12 +225,16 @@ A név nem lehet üres, a latitude értékének -90 és +90
 között kell lennie, a longitude értékének -180 és +180 között kell lennie!
 Írj rá tesztesetet!
 
+### Validáció problem-spring-web-starterrel
+
+Módosítsd úgy az alkalmazásodat, hogy a validációt a `problem-spring-web-starter` kezelje!
+
 ### Saját validáció
 
 Hozz létre egy saját validációs annotációt `@Coordinate` néven!
 Ennek legyen egy `Type` nevű enum paramétere, melynek értékei
 `Type.LAT`, `Type.LON`. Írj hozzá validációt, mely leellenőrzi, hogy a
-koordináták megfelelőek-e. (Csak `double` típusra rakható.) Írj rá tesztesetet!
+koordináták megfelelőek-e! (Csak `double` típusra rakható.) Írj rá tesztesetet!
 
 ### Validáció problem-spring-web-starterrel
 
@@ -308,143 +313,3 @@ az adatbázist és az alkalmazást tartalmazó Docker konténereket!
 
 Amennyiben nem Flywayt használnál, kipróbálhatod a Liquibase-t is.
 
-## MongoDB
-
-Índíts el egy MongoDB adatbázist Dockerben!
-Hozz létre egy új projektet `locations-mongodb` néven a jelenlegi projekt lemásolásával,
-és írd át az entitást, valamint a repository réteget, hogy ebbe az adatbázisba 
-dolgozzon!
-
-A `@DataJpaTest` annotációt tartalmazó teszt osztályt törölheted!
-
-## OAUTH 2.0 KeyCloak szerverrel
-
-Indítsd el a KeyCloak szervert! Konfiguráld be, hogy legyenek
-felhasználók, szerepkörökkel!
-
-Hozz létre egy alkalmazást `locations-security` néven a
-`locations` projekt lemásolásával! Integráld a Spring
-Security-t, hogy csak a JWT token megadásával lehessen
-adatokat módosítani.
-
-## RestTemplate
-
-Indítsd el Dockerben az _EventStore_ alkalmazást!
-Amennyiben létrejön, módosításra vagy törlésre kerül egy
-kedvenc hely, hívd meg az _EventStore_ REST webszolgáltatását!
-
-Az URL-t konfigurációs paraméterből olvasd be!
-
-Az `EventStoreGateway` osztályba dolgozz!
-
-## WireMock
-
-Írj integrációs tesztet az
-`EventStoreGateway` osztályra WireMock segítségével!
-
-## JMS üzenet küldése
-
-Indítsd el az ArtemisMQ-t Docker konténerben! 
-Állítsd le az _EventStore_ alkalmazást, majd indítsd újra, hogy csatlakozzon
-az ArtemisMQ-hoz!
-
-Módosítsd az alkalmazásod, hogy ne REST-en keresztül
-értesítse az _EventStore_ alkalmazást, hanem JMS üzenettel!
-
-Ha a RabbitMQ érdekel, akkor kipróbálhatod azt is a következő
-poszt alapján: [https://www.jtechlog.hu/2020/09/11/rabbitmq.html](https://www.jtechlog.hu/2020/09/11/rabbitmq.html).
-
-## Actuator
-
-* Kapcsold be az összes Actuatort!
-* Próbáld ki az `/info` Actuatort!
-* Kapcsold be, hogy az összes kapcsolt szolgáltatás bekerüljön a Health Actuatorba!
-* Próbáld ki a `/health` Actuatort!
-* Kapcsold be a Shutdown Actuatort is!
-* Próbáld ki a `/shutdown` Actuatort!
-* Próbáld ki a `/heapdump` és `/threaddump` Actuatort!
-* Próbáld ki a `/beans`, `/conditions`, `/mappings` és `/configprops` Actuatort!
-* Konfigurálj egy `InMemoryHttpTraceRepository` beant, és próbáld ki a `/httptrace` Actuatort!
-* Próbáld ki a `/flyway` Actuatort!
-* Az `/info` Actuatorba vedd fel az alkalmazás nevét, majd próbáld ki!
-* Próbáld ki a `/env` Actuatort!
-
-## GIT információk megjelenítése
-
-A `git-commit-id-plugin` plugin használatával jelenítsd meg az `/info` Actuatorban a Git commit id-ját!
-Ehhez az alkalmazás forráskódját Git verziókezelő rendszerbe kell commitolni.
-
-## Naplózás
-
-Kérd le a `locations` csomag naplózási szintjét, majd módosítsd Actuatoron keresztül futás közben!
-
-## Metrics
-
-Hozz létre egy metrikát, hogy hány kedvenc helyet hoztak létre!
-
-## Prometheus
-
-Integráld az alkalmazást a Prometheus eszközzel!
-
-## Audit Events
-
-Vegyél fel egy `InMemoryAuditEventRepository` beant!
-Minden módosító művelet esetén dobj egy új eventet!
-Ellenőrizd az Actuatorban a létrejött eventeket!
-
-## Continuous Delivery Jenkins Pipeline-nal
-
-* Indíts el lokálisan Docker konténerben egy Jenkinst!
-  * Admin jelszó a konzolon, vagy a `/var/jenkins_home/secrets/initialAdminPassword` fájlban.
-  * Telepítsd az alapértelmezett pluginokat!
-  * Add meg az admin felhasználó adatait! 
-* Telepítsd fel a JDK megfelelő verzióját!
-
-```shell
-docker run -p 8082:8080 -p 50000:50000 --name jenkins jenkins/jenkins:lts
-docker exec -it --user root jenkins bash
-```
-
-```shell
-wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public |  apt-key add -
-echo "deb https://adoptopenjdk.jfrog.io/adoptopenjdk/deb buster main" | tee /etc/apt/sources.list.d/adoptopenjdk.list
-apt-get update
-apt-get install adoptopenjdk-16-hotspot
-/usr/lib/jvm/adoptopenjdk-16-hotspot-amd64/bin/java -version
-```
-
-A _Jenkins Kezelése / Global Tool Configuration / Add JDK_ menüpontban:
-
-* _Name:_ `adoptopenjdk-16`
-* _JAVA_HOME_: `/usr/lib/jvm/adoptopenjdk-16-hotspot-amd64`
-
-_Új Item_ menüpontban Pipeline:
-
-* _Name_ értéke `Java version`
-* Pipeline script
-
-```groovy
-pipeline {
-    agent any
-    
-    tools {
-       jdk 'adoptopenjdk-16'
-    }
-
-    stages {
-        stage('Java version') {
-            steps {
-                sh 'java -version'
-            }
-        }
-    }
-}
-```
-
-* Hozd létre a két lépésből álló Pipeline-t!
-* Töltsd fel GitHubra, ha eddig nem tetted volna meg!
-* Állíts be egy új Pipeline Itemet!
-  * _Name_: `Locations`
-  * _Pipeline_: _Pipeline script from SCM_
-  * _SCM_: _Git_
-  * _Repository URL_: Git repo URL-jét kell megadni, GitHub link

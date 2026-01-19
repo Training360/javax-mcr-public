@@ -1,8 +1,0 @@
-POST http://localhost:8080/api/events
-Content-Type: application/json
-
-{
-  "message": "Employee has been created"
-}
-
-###
