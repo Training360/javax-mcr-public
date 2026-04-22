@@ -8,6 +8,7 @@ Tartalma:
 * [labs](labs) - Gyakorlati feladatok referenciamegoldása.
 * [demos-on-videos](demos-on-videos) - Videókon szereplő gyakorlati feladatok.
 * [demos-on-videos-spring-boot-3](demos-on-videos-spring-boot-3) - Spring Boot 3-ra frissített gyakorlati feladatok.
+* [demos-on-videos-spring-boot-4](demos-on-videos-spring-boot-4) - Spring Boot 4-ra frissített gyakorlati feladatok.
 * [slides/javax-mcr-slides.md](slides/javax-mcr-slides.md) - Videón szereplő, de azóta módosított slide-ok.
 
 ## Videón szereplő gyakorlati feladatok
