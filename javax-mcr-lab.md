@@ -153,16 +153,20 @@ a koordinátákat is.
 
 Írd át a projektet úgy, ne ModelMapperrel, hanem MapStructtal működjön!
 
-## Státuszkódok és hibakezelés
+## Státuszkód kezelés
 
 Módosítsd az alkalmazásod, hogy létrehozáskor `201`-es státuszkóddal,
 törléskor `204`-es státuszkóddal térjen vissza!
 
-Módosítsd az alkalmazásod, hogy az RFC szabványnak megfelelő
-JSON legyen az üzenet törzsében!
+## Hibakezelés
 
 Módosítsd, hogy nem található kedvenc hely esetén `404`-es státuszkód jöjjön vissza!
 Használj saját kivételt, pl. `LocationNotFoundException`!
+
+## Problem Details
+
+Módosítsd az alkalmazásod, hogy az RFC szabványnak megfelelő
+JSON legyen az üzenet törzsében!
 
 ## Státuszkódok és hibakezelés problem-spring-web-starterrel
 
